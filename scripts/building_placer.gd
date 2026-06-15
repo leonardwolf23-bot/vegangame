@@ -78,7 +78,7 @@ func _update_ghost() -> void:
 	var tile := _grid.world_to_tile(get_global_mouse_position())
 	var can_place := _grid.can_place(tile, building.get("size", Vector2i.ONE))
 
-	_ghost.global_position = _grid.tile_to_world(tile)
+	_ghost.global_position = _grid.tile_to_world(tile) + _get_ghost_offset()
 	_ghost.visible = true
 	_ghost.modulate = Color(0.3, 1.0, 0.3, 0.5) if can_place else Color(1.0, 0.3, 0.3, 0.5)
 
