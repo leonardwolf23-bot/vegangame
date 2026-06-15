@@ -1,0 +1,18 @@
+# Godot export / Import
+.godot/
+.import/
+export.cfg
+export_presets.cfg
+
+# Build artifacts
+*.translation
+*.import
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+*.swp
+*.swo
