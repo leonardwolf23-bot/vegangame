@@ -11,8 +11,10 @@ scripts/
   camera_controller.gd    # Kamera: Pan + Zoom
   grid_manager.gd         # Isometrische Koordinaten + Platzierungs-Checks
   building_placer.gd      # Platzieren, Entfernen, Ghost-Vorschau
-  main.gd                 # Verdrahtet alles in der Main-Szene
+  building_menu.gd        # Minimales Bau-Menü (UI)
+  main.gd                 # Verdrahtet alles in der Main-Szene (optional)
 scenes/
+  build_menu.tscn         # UI-Szene zum Einfügen
   main.tscn               # Beispiel-Szene (anpassen an dein Projekt)
 ```
 

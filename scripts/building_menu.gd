@@ -10,6 +10,7 @@ var _buttons: Array[Button] = []
 
 
 func _ready() -> void:
+	layer = 10
 	_placer = get_node_or_null(building_placer_path) as Node2D
 	if not _placer:
 		push_error("BuildingMenu: BuildingPlacer nicht gefunden unter: %s" % building_placer_path)
@@ -18,9 +19,13 @@ func _ready() -> void:
 
 
 func _build_menu() -> void:
-	# Panel unten links
+	# Panel oben links – in Godot 4 brauchen Controls Offsets, nicht nur position!
 	var panel := PanelContainer.new()
-	panel.position = Vector2(16, 16)
+	panel.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	panel.offset_left = 16
+	panel.offset_top = 16
+	panel.offset_right = 196
+	panel.offset_bottom = 136
 	add_child(panel)
 
 	var margin := MarginContainer.new()
