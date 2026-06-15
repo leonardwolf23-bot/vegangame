@@ -40,7 +40,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 
 	if event is InputEventKey and event.pressed and not event.echo:
-		var key_num := event.keycode - KEY_1
+		var key_num: int = int(event.keycode) - KEY_1
 		if key_num >= 0 and key_num < BuildingCatalog.get_count():
 			selected_building_index = key_num
 
