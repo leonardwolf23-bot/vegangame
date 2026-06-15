@@ -34,6 +34,9 @@ func _setup_ghost() -> void:
 	_ghost = Sprite2D.new()
 	_ghost.modulate = Color(1, 1, 1, 0.5)
 	_ghost.visible = false
+	# Über TileMaps zeichnen (sonst verdeckt isometrisches Y-Sorting die Vorschau)
+	_ghost.z_index = 100
+	_ghost.y_sort_enabled = false
 	add_child(_ghost)
 
 
