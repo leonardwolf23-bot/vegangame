@@ -13,6 +13,10 @@ extends Node2D
 @export_group("Spiel")
 @export var selected_building_index: int = 0
 
+@export_group("Ghost-Vorschau")
+## Verschiebt die Vorschau in Tile-Einheiten (Y negativ = visuell nach oben)
+@export var ghost_offset_tiles: Vector2 = Vector2(0, -1.5)
+
 var _grid: GridManager
 var _ghost: Sprite2D
 
@@ -108,3 +112,13 @@ func _remove_building(tile: Vector2i) -> void:
 	if _grid.building_layer.get_cell_source_id(tile) == -1:
 		return
 	_grid.building_layer.erase_cell(tile)
+
+
+func _get_ghost_offset() -> Vector2:
+	if not _grid or not _grid.building_layer or not _grid.building_layer.tile_set:
+		return Vector2.ZERO
+	var tile_size: Vector2i = _grid.building_layer.tile_set.tile_size
+	return Vector2(
+		ghost_offset_tiles.x * tile_size.x,
+		ghost_offset_tiles.y * tile_size.y
+	)
