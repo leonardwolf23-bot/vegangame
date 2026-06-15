@@ -39,10 +39,19 @@ func _input(event: InputEvent) -> void:
 
 
 func _process(delta: float) -> void:
-	# WASD / Pfeiltasten → Kamera bewegen
-	var direction := Input.get_vector("camera_pan_left", "camera_pan_right", "camera_pan_up", "camera_pan_down")
+	# WASD + Pfeiltasten → Kamera bewegen (ohne Input Map nötig)
+	var direction := Vector2.ZERO
+	if Input.is_physical_key_pressed(KEY_A) or Input.is_physical_key_pressed(KEY_LEFT):
+		direction.x -= 1.0
+	if Input.is_physical_key_pressed(KEY_D) or Input.is_physical_key_pressed(KEY_RIGHT):
+		direction.x += 1.0
+	if Input.is_physical_key_pressed(KEY_W) or Input.is_physical_key_pressed(KEY_UP):
+		direction.y -= 1.0
+	if Input.is_physical_key_pressed(KEY_S) or Input.is_physical_key_pressed(KEY_DOWN):
+		direction.y += 1.0
+
 	if direction != Vector2.ZERO:
-		position += direction * pan_speed * delta / zoom
+		position += direction.normalized() * pan_speed * delta / zoom
 
 
 func _apply_zoom(amount: float) -> void:
