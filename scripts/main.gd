@@ -1,25 +1,29 @@
 extends Node2D
-## Haupt-Szene: Verknüpft alle Systeme miteinander.
-## Szene-Struktur (in Godot anlegen):
+## Haupt-Szene: verbindet GridManager mit den TileMap-Layern.
+## An den Root-Node deiner Szene hängen.
 ##
-##   Main (dieses Skript)
-##   ├── Camera2D          → camera_controller.gd
-##   ├── GridManager       → grid_manager.gd
-##   ├── BuildingPlacer    → building_placer.gd
-##   └── World (Node2D)
-##       ├── GroundLayer   → TileMapLayer (Boden)
-##       └── BuildingLayer → TileMapLayer (Gebäude)
+## Passe die Node-Pfade unten an, wenn deine Nodes anders heißen.
 
 
-@onready var grid_manager: GridManager = $GridManager
-@onready var building_placer: Node2D = $BuildingPlacer
+@export_group("TileMap-Pfade")
+@export var ground_layer_path: NodePath = NodePath("World/GroundLayer")
+@export var building_layer_path: NodePath = NodePath("World/BuildingLayer")
+@export var grid_manager_path: NodePath = NodePath("GridManager")
 
 
 func _ready() -> void:
-	# Referenzen zwischen den Systemen verdrahten
-	var ground := $World/GroundLayer as TileMapLayer
-	var buildings := $World/BuildingLayer as TileMapLayer
+	var grid_manager := get_node_or_null(grid_manager_path) as GridManager
+	if not grid_manager:
+		push_error("Main: GridManager nicht gefunden unter: %s" % grid_manager_path)
+		return
+
+	var ground := get_node_or_null(ground_layer_path) as TileMapLayer
+	var buildings := get_node_or_null(building_layer_path) as TileMapLayer
+
+	if not ground:
+		push_error("Main: Ground-Layer nicht gefunden unter: %s" % ground_layer_path)
+	if not buildings:
+		push_error("Main: Building-Layer nicht gefunden unter: %s" % building_layer_path)
 
 	grid_manager.ground_layer = ground
 	grid_manager.building_layer = buildings
-	building_placer.grid_manager = grid_manager

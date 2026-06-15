@@ -1,16 +1,26 @@
 extends Node2D
-## Kern-Logik: Gebäude platzieren, entfernen und Vorschau anzeigen.
-## An einen Node in der Main-Szene hängen (z.B. "BuildingPlacer").
+## Gebäude platzieren, entfernen, Ghost-Vorschau.
+## An einen Node2D in der Szene hängen (z.B. "BuildingPlacer").
+##
+## VERKNÜPFUNG: Entweder main.gd nutzen (automatisch),
+## oder unten im Inspector "Grid Manager Path" auf ../GridManager lassen.
 
 
-@export var grid_manager: GridManager
+@export_group("Verknüpfungen")
+## Pfad zum GridManager-Node (Standard passt wenn er Geschwister-Node heißt "GridManager")
+@export var grid_manager_path: NodePath = NodePath("../GridManager")
+
+@export_group("Spiel")
 @export var selected_building_index: int = 0
 
-# Ghost-Vorschau: halbtransparentes Sprite das der Maus folgt
+var _grid: GridManager
 var _ghost: Sprite2D
 
 
 func _ready() -> void:
+	_grid = get_node_or_null(grid_manager_path) as GridManager
+	if not _grid:
+		push_error("BuildingPlacer: GridManager nicht gefunden! Pfad prüfen: %s" % grid_manager_path)
 	_setup_ghost()
 
 
@@ -26,18 +36,16 @@ func _process(_delta: float) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if not grid_manager:
+	if not _grid:
 		return
 
-	# Zifferntasten 1–9 → Gebäudetyp wählen
 	if event is InputEventKey and event.pressed and not event.echo:
 		var key_num := event.keycode - KEY_1
 		if key_num >= 0 and key_num < BuildingCatalog.get_count():
 			selected_building_index = key_num
 
-	# Linksklick → Gebäude platzieren
 	if event is InputEventMouseButton and event.pressed:
-		var tile := grid_manager.world_to_tile(get_global_mouse_position())
+		var tile := _grid.world_to_tile(get_global_mouse_position())
 		if event.button_index == MOUSE_BUTTON_LEFT:
 			_place_building(tile)
 		elif event.button_index == MOUSE_BUTTON_RIGHT:
@@ -45,7 +53,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _update_ghost() -> void:
-	if not grid_manager or not grid_manager.building_layer:
+	if not _grid or not _grid.building_layer:
 		_ghost.visible = false
 		return
 
@@ -54,17 +62,14 @@ func _update_ghost() -> void:
 		_ghost.visible = false
 		return
 
-	var tile := grid_manager.world_to_tile(get_global_mouse_position())
-	var can_place := grid_manager.can_place(tile, building.get("size", Vector2i.ONE))
+	var tile := _grid.world_to_tile(get_global_mouse_position())
+	var can_place := _grid.can_place(tile, building.get("size", Vector2i.ONE))
 
-	_ghost.global_position = grid_manager.tile_to_world(tile)
+	_ghost.global_position = _grid.tile_to_world(tile)
 	_ghost.visible = true
-
-	# Grün = platzierbar, Rot = blockiert
 	_ghost.modulate = Color(0.3, 1.0, 0.3, 0.5) if can_place else Color(1.0, 0.3, 0.3, 0.5)
 
-	# Tile-Textur aus dem Building-Layer als Vorschau holen
-	var tile_data := grid_manager.building_layer.tile_set.get_source(building["source_id"])
+	var tile_data := _grid.building_layer.tile_set.get_source(building["source_id"])
 	if tile_data is TileSetAtlasSource:
 		var atlas: TileSetAtlasSource = tile_data
 		_ghost.texture = atlas.texture
@@ -78,10 +83,10 @@ func _place_building(origin: Vector2i) -> void:
 		return
 
 	var size: Vector2i = building.get("size", Vector2i.ONE)
-	if not grid_manager.can_place(origin, size):
+	if not _grid.can_place(origin, size):
 		return
 
-	var layer := grid_manager.building_layer
+	var layer := _grid.building_layer
 	for x in range(size.x):
 		for y in range(size.y):
 			var cell := origin + Vector2i(x, y)
@@ -89,8 +94,8 @@ func _place_building(origin: Vector2i) -> void:
 
 
 func _remove_building(tile: Vector2i) -> void:
-	if not grid_manager.building_layer:
+	if not _grid.building_layer:
 		return
-	if grid_manager.building_layer.get_cell_source_id(tile) == -1:
+	if _grid.building_layer.get_cell_source_id(tile) == -1:
 		return
-	grid_manager.building_layer.erase_cell(tile)
+	_grid.building_layer.erase_cell(tile)
