@@ -24,6 +24,12 @@ func _ready() -> void:
 	_setup_ghost()
 
 
+## Wird vom Bau-Menü aufgerufen wenn der Spieler ein Gebäude wählt.
+func select_building(index: int) -> void:
+	if index >= 0 and index < BuildingCatalog.get_count():
+		selected_building_index = index
+
+
 func _setup_ghost() -> void:
 	_ghost = Sprite2D.new()
 	_ghost.modulate = Color(1, 1, 1, 0.5)

@@ -55,6 +55,14 @@ In `scripts/autoload/building_catalog.gd` die `BUILDINGS`-Liste bearbeiten:
 | `atlas_coords` | Position im Atlas (Vector2i)           |
 | `size`         | Fußabdruck in Tiles (z.B. 2×2)         |
 
+## Bau-Menü (UI)
+
+1. In der Main-Szene: **Rechtsklick → Instantiate Child Scene**
+2. `scenes/build_menu.tscn` wählen
+3. Der UI-Node heißt `UI` und findet den BuildingPlacer automatisch (`../BuildingPlacer`)
+
+Das Menü liest die Gebäude aus `BuildingCatalog` und zeigt Buttons für **House** und **Ersatzmilchfabrik**.
+
 ## Steuerung
 
 | Aktion              | Taste / Input        |
