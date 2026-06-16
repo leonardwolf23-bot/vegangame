@@ -1,0 +1,23 @@
+; Engine configuration file.
+; Godot 4.x – isometrischer City Builder (64x32 Tiles)
+
+config_version=5
+
+[application]
+
+config/name="VeganGame"
+run/main_scene="res://scenes/main.tscn"
+config/features=PackedStringArray("4.3", "Forward Plus")
+
+[autoload]
+
+BuildingCatalog="*res://scripts/autoload/building_catalog.gd"
+
+[display]
+
+window/size/viewport_width=1280
+window/size/viewport_height=720
+
+[rendering]
+
+textures/canvas_textures/default_texture_filter=0
