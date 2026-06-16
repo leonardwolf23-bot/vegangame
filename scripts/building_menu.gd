@@ -22,6 +22,7 @@ func _ready() -> void:
 	_build_menu()
 	GameState.money_changed.connect(_on_money_changed)
 	GameState.income_changed.connect(_on_income_changed)
+	GameState.milk_changed.connect(_on_milk_changed)
 	_refresh_money_ui()
 	_refresh_building_buttons()
 	if _placer and _placer.has_method("set_build_mode"):
@@ -49,6 +50,16 @@ func _build_menu() -> void:
 	_income_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	add_child(_income_label)
 
+	_milk_label = Label.new()
+	_milk_label.text = "Milch: 0"
+	_milk_label.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	_milk_label.offset_left = -320
+	_milk_label.offset_top = 64
+	_milk_label.offset_right = -16
+	_milk_label.offset_bottom = 88
+	_milk_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	add_child(_milk_label)
+
 	_toggle_btn = Button.new()
 	_toggle_btn.text = "Bauen"
 	_toggle_btn.custom_minimum_size = Vector2(120, 36)
@@ -65,8 +76,8 @@ func _build_menu() -> void:
 	_panel.set_anchors_preset(Control.PRESET_TOP_LEFT)
 	_panel.offset_left = 16
 	_panel.offset_top = 60
-	_panel.offset_right = 280
-	_panel.offset_bottom = 200
+	_panel.offset_right = 360
+	_panel.offset_bottom = 220
 	add_child(_panel)
 
 	var margin := MarginContainer.new()
@@ -88,7 +99,7 @@ func _build_menu() -> void:
 		var building: Dictionary = BuildingCatalog.get_building(i)
 		var btn := Button.new()
 		btn.text = BuildingCatalog.get_button_label(building)
-		btn.custom_minimum_size = Vector2(240, 32)
+		btn.custom_minimum_size = Vector2(320, 32)
 		btn.pressed.connect(_on_building_pressed.bind(i))
 		box.add_child(btn)
 		_buttons.append(btn)
@@ -119,11 +130,23 @@ func _on_income_changed(_income: float) -> void:
 	_refresh_money_ui()
 
 
+func _on_milk_changed(_amount: float) -> void:
+	_refresh_money_ui()
+
+
 func _refresh_money_ui() -> void:
 	if _money_label:
 		_money_label.text = "Geld: %d €" % GameState.money
 	if _income_label:
 		_income_label.text = "Einkommen: +%d €/s" % int(GameState.get_income_per_second())
+	if _milk_label:
+		_milk_label.text = "Milch: %d  |  +%.0f / -%.0f /s" % [
+			int(GameState.milk),
+			GameState.get_milk_production(),
+			GameState.get_milk_consumption(),
+		]
+		if GameState.get_milk_production() < GameState.get_milk_consumption() and GameState.milk <= 0.0:
+			_milk_label.text += "  (Häuser ohne Milch!)"
 
 
 func _refresh_building_buttons() -> void:
