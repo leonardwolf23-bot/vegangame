@@ -6,9 +6,7 @@ extends Node
 @export var ground_layer: TileMapLayer
 @export var building_layer: TileMapLayer
 
-# Anker-Kachel → gespeicherte Footprint-Daten
 var _placed: Dictionary = {}
-# Jede belegte Kachel → Anker-Kachel des Gebäudes
 var _cell_owner: Dictionary = {}
 
 
@@ -63,7 +61,11 @@ func register_building(anchor: Vector2i, building: Dictionary) -> void:
 	_placed[anchor] = {
 		"footprint": footprint,
 		"foot_origin": foot_origin,
+		"cost": BuildingCatalog.get_cost(building),
 		"income": BuildingCatalog.get_income(building),
+		"produce_milk": BuildingCatalog.get_produce_milk(building),
+		"consume_milk": BuildingCatalog.get_consume_milk(building),
+		"income_needs_milk": BuildingCatalog.income_needs_milk(building),
 	}
 
 	for x in range(footprint.x):
@@ -71,22 +73,21 @@ func register_building(anchor: Vector2i, building: Dictionary) -> void:
 			_cell_owner[foot_origin + Vector2i(x, y)] = anchor
 
 
-func remove_building_at(tile: Vector2i) -> int:
+func remove_building_at(tile: Vector2i) -> Dictionary:
 	var anchor: Vector2i = _cell_owner.get(tile, Vector2i(-999999, -999999))
 	if anchor == Vector2i(-999999, -999999):
 		if not building_layer or building_layer.get_cell_source_id(tile) == -1:
-			return 0
+			return {}
 		building_layer.erase_cell(tile)
-		return 0
+		return {}
 
-	var data: Dictionary = _placed[anchor]
+	var data: Dictionary = _placed[anchor].duplicate()
 	var footprint: Vector2i = data["footprint"]
 	var foot_origin: Vector2i = data["foot_origin"]
-	var income: int = int(data.get("income", 0))
 
 	for x in range(footprint.x):
 		for y in range(footprint.y):
 			_cell_owner.erase(foot_origin + Vector2i(x, y))
 	_placed.erase(anchor)
 	building_layer.erase_cell(anchor)
-	return income
+	return data

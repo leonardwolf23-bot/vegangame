@@ -1,5 +1,5 @@
 extends CanvasLayer
-## Bau-Menü + Geld-Anzeige für im Editor gebaute UI.
+## Bau-Menü + Geld- und Milch-Anzeige.
 
 
 @export var building_placer_path: NodePath = NodePath("../BuildingPlacer")
@@ -9,6 +9,7 @@ extends CanvasLayer
 @export var button_fabrik: Button
 @export var money_label: Label
 @export var income_label: Label
+@export var milk_label: Label
 
 var _placer: Node2D
 var _menu_open: bool = false
@@ -31,6 +32,7 @@ func _ready() -> void:
 
 	GameState.money_changed.connect(_on_money_changed)
 	GameState.income_changed.connect(_on_income_changed)
+	GameState.milk_changed.connect(_on_milk_changed)
 	_refresh_money_ui()
 	_refresh_building_buttons()
 
@@ -56,9 +58,14 @@ func _on_select(index: int) -> void:
 
 func _on_money_changed(_new_amount: int) -> void:
 	_refresh_money_ui()
+	_refresh_building_buttons()
 
 
 func _on_income_changed(_income: float) -> void:
+	_refresh_money_ui()
+
+
+func _on_milk_changed(_amount: float) -> void:
 	_refresh_money_ui()
 
 
@@ -67,6 +74,15 @@ func _refresh_money_ui() -> void:
 		money_label.text = "Geld: %d €" % GameState.money
 	if income_label:
 		income_label.text = "Einkommen: +%d €/s" % int(GameState.get_income_per_second())
+	if milk_label:
+		var net_milk: float = GameState.get_milk_production() - GameState.get_milk_consumption()
+		milk_label.text = "Milch: %d  |  +%.0f / -%.0f /s" % [
+			int(GameState.milk),
+			GameState.get_milk_production(),
+			GameState.get_milk_consumption(),
+		]
+		if net_milk < 0.0 and GameState.milk <= 0.0:
+			milk_label.text += "  (Häuser ohne Milch!)"
 
 
 func _refresh_building_buttons() -> void:

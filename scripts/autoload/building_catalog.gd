@@ -1,10 +1,6 @@
 extends Node
 ## Autoload: Zentrale Liste aller platzierbaren Gebäude.
 
-# Jedes Gebäude:
-#   name, source_id, atlas_coords, size, footprint, footprint_offset
-#   cost    → Baukosten in Euro
-#   income  → Einkommen pro Sekunde
 const BUILDINGS: Array[Dictionary] = [
 	{
 		"name": "House",
@@ -15,6 +11,9 @@ const BUILDINGS: Array[Dictionary] = [
 		"footprint_offset": Vector2i(-1, -2),
 		"cost": 100,
 		"income": 5,
+		"produce_milk": 0.0,
+		"consume_milk": 2.0,
+		"income_needs_milk": true,
 	},
 	{
 		"name": "Ersatzmilchfabrik",
@@ -25,6 +24,9 @@ const BUILDINGS: Array[Dictionary] = [
 		"footprint_offset": Vector2i(-1, -2),
 		"cost": 300,
 		"income": 15,
+		"produce_milk": 5.0,
+		"consume_milk": 0.0,
+		"income_needs_milk": false,
 	},
 ]
 
@@ -47,6 +49,18 @@ func get_income(building: Dictionary) -> int:
 	return int(building.get("income", 0))
 
 
+func get_produce_milk(building: Dictionary) -> float:
+	return float(building.get("produce_milk", 0.0))
+
+
+func get_consume_milk(building: Dictionary) -> float:
+	return float(building.get("consume_milk", 0.0))
+
+
+func income_needs_milk(building: Dictionary) -> bool:
+	return bool(building.get("income_needs_milk", false))
+
+
 func get_footprint(building: Dictionary) -> Vector2i:
 	if building.has("footprint"):
 		return building["footprint"]
@@ -65,4 +79,11 @@ func get_button_label(building: Dictionary) -> String:
 	var name_text: String = building.get("name", "Gebäude")
 	var cost: int = get_cost(building)
 	var income: int = get_income(building)
-	return "%s  |  %d€  |  +%d/s" % [name_text, cost, income]
+	var label := "%s  |  %d€  |  +%d/s" % [name_text, cost, income]
+	var produce: float = get_produce_milk(building)
+	var consume: float = get_consume_milk(building)
+	if produce > 0.0:
+		label += "  |  +%.0f Milch/s" % produce
+	if consume > 0.0:
+		label += "  |  -%.0f Milch/s" % consume
+	return label

@@ -10,6 +10,7 @@ var _panel: PanelContainer
 var _toggle_btn: Button
 var _money_label: Label
 var _income_label: Label
+var _milk_label: Label
 var _menu_open: bool = false
 
 

@@ -8,6 +8,7 @@ extends Node2D
 
 @export_group("Spiel")
 @export var selected_building_index: int = 0
+@export_range(0.0, 1.0, 0.05) var sell_refund_factor: float = 0.5
 
 @export_group("Ghost-Vorschau")
 ## Verschiebt die Vorschau in Kachel-Einheiten (Bruchteile möglich, z.B. 0.5)
@@ -55,7 +56,14 @@ func _process(_delta: float) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if not _grid or not _build_mode_active:
+	if not _grid:
+		return
+
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_RIGHT:
+		_sell_building(_get_placement_tile())
+		return
+
+	if not _build_mode_active:
 		return
 
 	if event is InputEventKey and event.pressed and not event.echo:
@@ -64,11 +72,9 @@ func _unhandled_input(event: InputEvent) -> void:
 			selected_building_index = key_num
 
 	if event is InputEventMouseButton and event.pressed:
-		var tile := _get_placement_tile()
+		var tile: Vector2i = _get_placement_tile()
 		if event.button_index == MOUSE_BUTTON_LEFT:
 			_place_building(tile)
-		elif event.button_index == MOUSE_BUTTON_RIGHT:
-			_remove_building(tile)
 
 
 func _get_placement_tile() -> Vector2i:
@@ -130,13 +136,20 @@ func _place_building(origin: Vector2i) -> void:
 				layer.set_cell(cell, building["source_id"], building["atlas_coords"])
 
 	_grid.register_building(origin, building)
-	GameState.add_building_income(BuildingCatalog.get_income(building))
+	GameState.register_building_effects(building)
 
 
-func _remove_building(tile: Vector2i) -> void:
-	var income: int = _grid.remove_building_at(tile)
-	if income > 0:
-		GameState.remove_building_income(income)
+func _sell_building(tile: Vector2i) -> void:
+	var data: Dictionary = _grid.remove_building_at(tile)
+	if data.is_empty():
+		return
+
+	GameState.unregister_building_effects(data)
+
+	var cost: int = int(data.get("cost", 0))
+	var refund: int = int(cost * sell_refund_factor)
+	if refund > 0:
+		GameState.add_money(refund)
 
 
 func _get_ghost_offset() -> Vector2:
