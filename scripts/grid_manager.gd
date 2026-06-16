@@ -1,18 +1,17 @@
 class_name GridManager
 extends Node
 ## Hilfsklasse für isometrische Koordinaten-Umrechnung.
-## An die Main-Szene hängen und Ground-/Building-Layer im Inspector zuweisen.
 
 
 @export var ground_layer: TileMapLayer
 @export var building_layer: TileMapLayer
 
-# origin → footprint; jede belegte Zelle → origin des Gebäudes
+# Anker-Kachel → gespeicherte Footprint-Daten
 var _placed: Dictionary = {}
+# Jede belegte Kachel → Anker-Kachel des Gebäudes
 var _cell_owner: Dictionary = {}
 
 
-# Wandelt eine globale Maus-/Weltposition in Tile-Koordinaten um.
 func world_to_tile(world_pos: Vector2) -> Vector2i:
 	if not building_layer:
 		return Vector2i(-9999, -9999)
@@ -20,7 +19,6 @@ func world_to_tile(world_pos: Vector2) -> Vector2i:
 	return building_layer.local_to_map(local_pos)
 
 
-# Wandelt Tile-Koordinaten zurück in Weltposition (Tile-Mitte).
 func tile_to_world(tile: Vector2i) -> Vector2:
 	if not building_layer:
 		return Vector2.ZERO
@@ -28,14 +26,12 @@ func tile_to_world(tile: Vector2i) -> Vector2:
 	return building_layer.to_global(local_pos)
 
 
-# Prüft ob auf dem Boden-Layer an dieser Stelle ein Tile liegt.
 func has_ground(tile: Vector2i) -> bool:
 	if not ground_layer:
-		return true  # Kein Ground-Layer → überall bauen erlauben
+		return true
 	return ground_layer.get_cell_source_id(tile) != -1
 
 
-# Prüft ob der Building-Layer an dieser Stelle leer ist.
 func is_building_slot_free(tile: Vector2i) -> bool:
 	if _cell_owner.has(tile):
 		return false
@@ -44,33 +40,6 @@ func is_building_slot_free(tile: Vector2i) -> bool:
 	return building_layer.get_cell_source_id(tile) == -1
 
 
-# Markiert alle Kacheln im Fußabdruck als belegt.
-func register_building(origin: Vector2i, footprint: Vector2i) -> void:
-	_placed[origin] = footprint
-	for x in range(footprint.x):
-		for y in range(footprint.y):
-			_cell_owner[origin + Vector2i(x, y)] = origin
-
-
-# Entfernt Gebäude an dieser Kachel (findet automatisch den Ursprung).
-func remove_building_at(tile: Vector2i) -> bool:
-	var origin: Vector2i = _cell_owner.get(tile, Vector2i(-999999, -999999))
-	if origin == Vector2i(-999999, -999999):
-		if not building_layer or building_layer.get_cell_source_id(tile) == -1:
-			return false
-		building_layer.erase_cell(tile)
-		return true
-
-	var footprint: Vector2i = _placed[origin]
-	for x in range(footprint.x):
-		for y in range(footprint.y):
-			_cell_owner.erase(origin + Vector2i(x, y))
-	_placed.erase(origin)
-	building_layer.erase_cell(origin)
-	return true
-
-
-# Prüft ob ein Gebäude mit gegebener Größe platziert werden kann.
 func can_place(origin: Vector2i, size: Vector2i) -> bool:
 	for x in range(size.x):
 		for y in range(size.y):
@@ -79,4 +48,43 @@ func can_place(origin: Vector2i, size: Vector2i) -> bool:
 				return false
 			if not is_building_slot_free(cell):
 				return false
+	return true
+
+
+func can_place_building(anchor: Vector2i, building: Dictionary) -> bool:
+	var foot_origin := BuildingCatalog.get_footprint_origin(anchor, building)
+	return can_place(foot_origin, BuildingCatalog.get_footprint(building))
+
+
+func register_building(anchor: Vector2i, building: Dictionary) -> void:
+	var footprint: Vector2i = BuildingCatalog.get_footprint(building)
+	var foot_origin: Vector2i = BuildingCatalog.get_footprint_origin(anchor, building)
+
+	_placed[anchor] = {
+		"footprint": footprint,
+		"foot_origin": foot_origin,
+	}
+
+	for x in range(footprint.x):
+		for y in range(footprint.y):
+			_cell_owner[foot_origin + Vector2i(x, y)] = anchor
+
+
+func remove_building_at(tile: Vector2i) -> bool:
+	var anchor: Vector2i = _cell_owner.get(tile, Vector2i(-999999, -999999))
+	if anchor == Vector2i(-999999, -999999):
+		if not building_layer or building_layer.get_cell_source_id(tile) == -1:
+			return false
+		building_layer.erase_cell(tile)
+		return true
+
+	var data: Dictionary = _placed[anchor]
+	var footprint: Vector2i = data["footprint"]
+	var foot_origin: Vector2i = data["foot_origin"]
+
+	for x in range(footprint.x):
+		for y in range(footprint.y):
+			_cell_owner.erase(foot_origin + Vector2i(x, y))
+	_placed.erase(anchor)
+	building_layer.erase_cell(anchor)
 	return true
