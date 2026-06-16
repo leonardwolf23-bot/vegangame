@@ -157,7 +157,7 @@ func get_summary_lines(max_lines: int = 8) -> PackedStringArray:
 		var amount: float = get_amount(resource_id)
 		if amount <= 0.0:
 			continue
-		lines.append("%s: %.0f" % [ResourceCatalog.get_name(resource_id), amount])
+		lines.append("%s: %.0f" % [ResourceCatalog.get_resource_name(resource_id), amount])
 		shown += 1
 		if shown >= max_lines:
 			lines.append("...")

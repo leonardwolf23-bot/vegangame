@@ -39,7 +39,7 @@ const DISPLAY_NAMES: Dictionary = {
 }
 
 
-func get_name(resource_id: String) -> String:
+func get_resource_name(resource_id: String) -> String:
 	return DISPLAY_NAMES.get(resource_id, resource_id)
 
 
