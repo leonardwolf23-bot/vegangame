@@ -15,6 +15,7 @@ extends Node2D
 
 var _grid: GridManager
 var _ghost: Sprite2D
+var _build_mode_active: bool = false
 
 
 func _ready() -> void:
@@ -30,6 +31,12 @@ func select_building(index: int) -> void:
 		selected_building_index = index
 
 
+func set_build_mode(active: bool) -> void:
+	_build_mode_active = active
+	if not _build_mode_active and _ghost:
+		_ghost.visible = false
+
+
 func _setup_ghost() -> void:
 	_ghost = Sprite2D.new()
 	_ghost.modulate = Color(1, 1, 1, 0.5)
@@ -40,11 +47,15 @@ func _setup_ghost() -> void:
 
 
 func _process(_delta: float) -> void:
+	if not _build_mode_active:
+		if _ghost:
+			_ghost.visible = false
+		return
 	_update_ghost()
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if not _grid:
+	if not _grid or not _build_mode_active:
 		return
 
 	if event is InputEventKey and event.pressed and not event.echo:

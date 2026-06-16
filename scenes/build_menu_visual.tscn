@@ -5,14 +5,24 @@
 [node name="UI" type="CanvasLayer"]
 layer = 10
 script = ExtResource("1_ui")
+build_toggle_button = NodePath("BuildToggleBtn")
+build_panel = NodePath("Panel")
 button_house = NodePath("Panel/Margin/VBox/HouseBtn")
 button_fabrik = NodePath("Panel/Margin/VBox/FabrikBtn")
 
-[node name="Panel" type="PanelContainer" parent="."]
+[node name="BuildToggleBtn" type="Button" parent="."]
 offset_left = 16.0
 offset_top = 16.0
+offset_right = 136.0
+offset_bottom = 52.0
+text = "Bauen"
+
+[node name="Panel" type="PanelContainer" parent="."]
+visible = false
+offset_left = 16.0
+offset_top = 60.0
 offset_right = 196.0
-offset_bottom = 136.0
+offset_bottom = 180.0
 
 [node name="Margin" type="MarginContainer" parent="Panel"]
 layout_mode = 2
@@ -27,7 +37,7 @@ theme_override_constants/separation = 6
 
 [node name="Title" type="Label" parent="Panel/Margin/VBox"]
 layout_mode = 2
-text = "Bauen"
+text = "Gebäude wählen"
 
 [node name="HouseBtn" type="Button" parent="Panel/Margin/VBox"]
 custom_minimum_size = Vector2(160, 32)
