@@ -6,18 +6,19 @@
 layer = 10
 script = ExtResource("1_ui")
 build_toggle_button = NodePath("BuildToggleBtn")
-build_panel = NodePath("Panel")
-button_house = NodePath("Panel/Margin/VBox/HouseBtn")
-button_fabrik = NodePath("Panel/Margin/VBox/FabrikBtn")
+build_panel = NodePath("BuildPanel")
+building_list = NodePath("BuildPanel/Margin/MainVBox/BuildingScroll/BuildingList")
+mode_panel = NodePath("BuildPanel/Margin/MainVBox/ModePanel")
+mode_list = NodePath("BuildPanel/Margin/MainVBox/ModePanel/ModeMargin/ModeList")
 money_label = NodePath("MoneyLabel")
 income_label = NodePath("IncomeLabel")
-milk_label = NodePath("MilkLabel")
+resources_label = NodePath("ResourcesLabel")
 
 [node name="MoneyLabel" type="Label" parent="."]
 anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
-offset_left = -320.0
+offset_left = -340.0
 offset_top = 16.0
 offset_right = -16.0
 offset_bottom = 40.0
@@ -29,24 +30,24 @@ horizontal_alignment = 2
 anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
-offset_left = -320.0
+offset_left = -340.0
 offset_top = 40.0
 offset_right = -16.0
 offset_bottom = 64.0
 grow_horizontal = 0
-text = "Einkommen: +0 €/s"
+text = "Wohn-Einkommen: +0 €/s"
 horizontal_alignment = 2
 
-[node name="MilkLabel" type="Label" parent="."]
+[node name="ResourcesLabel" type="Label" parent="."]
 anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
-offset_left = -320.0
+offset_left = -340.0
 offset_top = 64.0
 offset_right = -16.0
-offset_bottom = 88.0
+offset_bottom = 220.0
 grow_horizontal = 0
-text = "Milch: 0  |  +0 / -0 /s"
+text = "Ressourcen..."
 horizontal_alignment = 2
 
 [node name="BuildToggleBtn" type="Button" parent="."]
@@ -56,34 +57,49 @@ offset_right = 136.0
 offset_bottom = 52.0
 text = "Bauen"
 
-[node name="Panel" type="PanelContainer" parent="."]
+[node name="BuildPanel" type="PanelContainer" parent="."]
 visible = false
 offset_left = 16.0
 offset_top = 60.0
-offset_right = 360.0
-offset_bottom = 220.0
+offset_right = 380.0
+offset_bottom = 520.0
 
-[node name="Margin" type="MarginContainer" parent="Panel"]
+[node name="Margin" type="MarginContainer" parent="BuildPanel"]
 layout_mode = 2
 theme_override_constants/margin_left = 10
 theme_override_constants/margin_top = 8
 theme_override_constants/margin_right = 10
 theme_override_constants/margin_bottom = 8
 
-[node name="VBox" type="VBoxContainer" parent="Panel/Margin"]
+[node name="MainVBox" type="VBoxContainer" parent="BuildPanel/Margin"]
 layout_mode = 2
-theme_override_constants/separation = 6
+theme_override_constants/separation = 8
 
-[node name="Title" type="Label" parent="Panel/Margin/VBox"]
+[node name="Title" type="Label" parent="BuildPanel/Margin/MainVBox"]
 layout_mode = 2
 text = "Gebäude wählen"
 
-[node name="HouseBtn" type="Button" parent="Panel/Margin/VBox"]
-custom_minimum_size = Vector2(320, 32)
+[node name="BuildingScroll" type="ScrollContainer" parent="BuildPanel/Margin/MainVBox"]
+custom_minimum_size = Vector2(0, 220)
 layout_mode = 2
-text = "House  |  100€  |  +5/s  |  -2 Milch/s"
+size_flags_vertical = 3
 
-[node name="FabrikBtn" type="Button" parent="Panel/Margin/VBox"]
-custom_minimum_size = Vector2(320, 32)
+[node name="BuildingList" type="VBoxContainer" parent="BuildPanel/Margin/MainVBox/BuildingScroll"]
 layout_mode = 2
-text = "Ersatzmilchfabrik  |  300€  |  +15/s  |  +5 Milch/s"
+size_flags_horizontal = 3
+theme_override_constants/separation = 4
+
+[node name="ModePanel" type="PanelContainer" parent="BuildPanel/Margin/MainVBox"]
+visible = false
+layout_mode = 2
+
+[node name="ModeMargin" type="MarginContainer" parent="BuildPanel/Margin/MainVBox/ModePanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 8
+theme_override_constants/margin_top = 6
+theme_override_constants/margin_right = 8
+theme_override_constants/margin_bottom = 6
+
+[node name="ModeList" type="VBoxContainer" parent="BuildPanel/Margin/MainVBox/ModePanel/ModeMargin"]
+layout_mode = 2
+theme_override_constants/separation = 4

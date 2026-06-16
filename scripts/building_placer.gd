@@ -1,6 +1,5 @@
 extends Node2D
-## Gebäude platzieren, entfernen, Ghost-Vorschau.
-## An einen Node2D in der Szene hängen (z.B. "BuildingPlacer").
+## Gebäude platzieren, verkaufen, Ghost-Vorschau.
 
 
 @export_group("Verknüpfungen")
@@ -11,7 +10,6 @@ extends Node2D
 @export_range(0.0, 1.0, 0.05) var sell_refund_factor: float = 0.5
 
 @export_group("Ghost-Vorschau")
-## Verschiebt die Vorschau in Kachel-Einheiten (Bruchteile möglich, z.B. 0.5)
 @export var ghost_offset_tiles: Vector2 = Vector2(0, 0.5)
 
 var _grid: GridManager
@@ -71,10 +69,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		if key_num >= 0 and key_num < BuildingCatalog.get_count():
 			selected_building_index = key_num
 
-	if event is InputEventMouseButton and event.pressed:
-		var tile: Vector2i = _get_placement_tile()
-		if event.button_index == MOUSE_BUTTON_LEFT:
-			_place_building(tile)
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		_place_building(_get_placement_tile())
 
 
 func _get_placement_tile() -> Vector2i:
@@ -97,7 +93,7 @@ func _update_ghost() -> void:
 		_ghost.visible = false
 		return
 
-	var tile := _get_placement_tile()
+	var tile: Vector2i = _get_placement_tile()
 	var can_place: bool = _can_place_building(tile, building)
 
 	_ghost.global_position = _grid.tile_to_world(tile) + _get_ghost_offset()
@@ -113,7 +109,8 @@ func _update_ghost() -> void:
 
 
 func _place_building(origin: Vector2i) -> void:
-	var building: Dictionary = BuildingCatalog.get_building(selected_building_index)
+	var building_index: int = selected_building_index
+	var building: Dictionary = BuildingCatalog.get_building(building_index)
 	if building.is_empty():
 		return
 
@@ -132,11 +129,14 @@ func _place_building(origin: Vector2i) -> void:
 	else:
 		for x in range(size.x):
 			for y in range(size.y):
-				var cell := origin + Vector2i(x, y)
+				var cell: Vector2i = origin + Vector2i(x, y)
 				layer.set_cell(cell, building["source_id"], building["atlas_coords"])
 
-	_grid.register_building(origin, building)
-	GameState.register_building_effects(building)
+	_grid.register_building(origin, building_index, building)
+	ProductionManager.register_building(origin, building_index)
+
+	if BuildingCatalog.is_housing(building):
+		GameState.register_housing(BuildingCatalog.get_income(building))
 
 
 func _sell_building(tile: Vector2i) -> void:
@@ -144,7 +144,13 @@ func _sell_building(tile: Vector2i) -> void:
 	if data.is_empty():
 		return
 
-	GameState.unregister_building_effects(data)
+	var anchor: Vector2i = data.get("anchor", Vector2i.ZERO)
+	ProductionManager.unregister_building(anchor)
+
+	var building_index: int = int(data.get("building_index", -1))
+	var building: Dictionary = BuildingCatalog.get_building(building_index)
+	if BuildingCatalog.is_housing(building):
+		GameState.unregister_housing(BuildingCatalog.get_income(building))
 
 	var cost: int = int(data.get("cost", 0))
 	var refund: int = int(cost * sell_refund_factor)

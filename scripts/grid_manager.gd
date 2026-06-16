@@ -1,6 +1,5 @@
 class_name GridManager
 extends Node
-## Hilfsklasse für isometrische Koordinaten-Umrechnung.
 
 
 @export var ground_layer: TileMapLayer
@@ -54,18 +53,17 @@ func can_place_building(anchor: Vector2i, building: Dictionary) -> bool:
 	return can_place(foot_origin, BuildingCatalog.get_footprint(building))
 
 
-func register_building(anchor: Vector2i, building: Dictionary) -> void:
+func register_building(anchor: Vector2i, building_index: int, building: Dictionary) -> void:
 	var footprint: Vector2i = BuildingCatalog.get_footprint(building)
 	var foot_origin: Vector2i = BuildingCatalog.get_footprint_origin(anchor, building)
 
 	_placed[anchor] = {
+		"anchor": anchor,
 		"footprint": footprint,
 		"foot_origin": foot_origin,
+		"building_index": building_index,
 		"cost": BuildingCatalog.get_cost(building),
 		"income": BuildingCatalog.get_income(building),
-		"produce_milk": BuildingCatalog.get_produce_milk(building),
-		"consume_milk": BuildingCatalog.get_consume_milk(building),
-		"income_needs_milk": BuildingCatalog.income_needs_milk(building),
 	}
 
 	for x in range(footprint.x):
