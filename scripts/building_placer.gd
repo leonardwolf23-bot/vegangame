@@ -75,6 +75,12 @@ func _get_placement_tile() -> Vector2i:
 	return _grid.world_to_tile(get_global_mouse_position())
 
 
+func _can_place_building(tile: Vector2i, building: Dictionary) -> bool:
+	if not _grid.can_place_building(tile, building):
+		return false
+	return GameState.can_afford(BuildingCatalog.get_cost(building))
+
+
 func _update_ghost() -> void:
 	if not _grid or not _grid.building_layer:
 		_ghost.visible = false
@@ -86,7 +92,7 @@ func _update_ghost() -> void:
 		return
 
 	var tile := _get_placement_tile()
-	var can_place: bool = _grid.can_place_building(tile, building)
+	var can_place: bool = _can_place_building(tile, building)
 
 	_ghost.global_position = _grid.tile_to_world(tile) + _get_ghost_offset()
 	_ghost.visible = true
@@ -105,7 +111,11 @@ func _place_building(origin: Vector2i) -> void:
 	if building.is_empty():
 		return
 
-	if not _grid.can_place_building(origin, building):
+	if not _can_place_building(origin, building):
+		return
+
+	var cost: int = BuildingCatalog.get_cost(building)
+	if not GameState.spend(cost):
 		return
 
 	var layer: TileMapLayer = _grid.building_layer
@@ -120,10 +130,13 @@ func _place_building(origin: Vector2i) -> void:
 				layer.set_cell(cell, building["source_id"], building["atlas_coords"])
 
 	_grid.register_building(origin, building)
+	GameState.add_building_income(BuildingCatalog.get_income(building))
 
 
 func _remove_building(tile: Vector2i) -> void:
-	_grid.remove_building_at(tile)
+	var income: int = _grid.remove_building_at(tile)
+	if income > 0:
+		GameState.remove_building_income(income)
 
 
 func _get_ghost_offset() -> Vector2:

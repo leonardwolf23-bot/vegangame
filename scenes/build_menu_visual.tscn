@@ -9,6 +9,32 @@ build_toggle_button = NodePath("BuildToggleBtn")
 build_panel = NodePath("Panel")
 button_house = NodePath("Panel/Margin/VBox/HouseBtn")
 button_fabrik = NodePath("Panel/Margin/VBox/FabrikBtn")
+money_label = NodePath("MoneyLabel")
+income_label = NodePath("IncomeLabel")
+
+[node name="MoneyLabel" type="Label" parent="."]
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -220.0
+offset_top = 16.0
+offset_right = -16.0
+offset_bottom = 40.0
+grow_horizontal = 0
+text = "Geld: 500 €"
+horizontal_alignment = 2
+
+[node name="IncomeLabel" type="Label" parent="."]
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -220.0
+offset_top = 40.0
+offset_right = -16.0
+offset_bottom = 64.0
+grow_horizontal = 0
+text = "Einkommen: +0 €/s"
+horizontal_alignment = 2
 
 [node name="BuildToggleBtn" type="Button" parent="."]
 offset_left = 16.0
@@ -21,8 +47,8 @@ text = "Bauen"
 visible = false
 offset_left = 16.0
 offset_top = 60.0
-offset_right = 196.0
-offset_bottom = 180.0
+offset_right = 280.0
+offset_bottom = 200.0
 
 [node name="Margin" type="MarginContainer" parent="Panel"]
 layout_mode = 2
@@ -40,11 +66,11 @@ layout_mode = 2
 text = "Gebäude wählen"
 
 [node name="HouseBtn" type="Button" parent="Panel/Margin/VBox"]
-custom_minimum_size = Vector2(160, 32)
+custom_minimum_size = Vector2(240, 32)
 layout_mode = 2
-text = "House"
+text = "House  |  100€  |  +5/s"
 
 [node name="FabrikBtn" type="Button" parent="Panel/Margin/VBox"]
-custom_minimum_size = Vector2(160, 32)
+custom_minimum_size = Vector2(240, 32)
 layout_mode = 2
-text = "Ersatzmilchfabrik"
+text = "Ersatzmilchfabrik  |  300€  |  +15/s"

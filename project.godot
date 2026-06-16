@@ -12,6 +12,7 @@ config/features=PackedStringArray("4.3", "Forward Plus")
 [autoload]
 
 BuildingCatalog="*res://scripts/autoload/building_catalog.gd"
+GameState="*res://scripts/autoload/game_state.gd"
 
 [display]
 

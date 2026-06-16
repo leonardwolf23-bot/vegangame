@@ -63,6 +63,7 @@ func register_building(anchor: Vector2i, building: Dictionary) -> void:
 	_placed[anchor] = {
 		"footprint": footprint,
 		"foot_origin": foot_origin,
+		"income": BuildingCatalog.get_income(building),
 	}
 
 	for x in range(footprint.x):
@@ -70,21 +71,22 @@ func register_building(anchor: Vector2i, building: Dictionary) -> void:
 			_cell_owner[foot_origin + Vector2i(x, y)] = anchor
 
 
-func remove_building_at(tile: Vector2i) -> bool:
+func remove_building_at(tile: Vector2i) -> int:
 	var anchor: Vector2i = _cell_owner.get(tile, Vector2i(-999999, -999999))
 	if anchor == Vector2i(-999999, -999999):
 		if not building_layer or building_layer.get_cell_source_id(tile) == -1:
-			return false
+			return 0
 		building_layer.erase_cell(tile)
-		return true
+		return 0
 
 	var data: Dictionary = _placed[anchor]
 	var footprint: Vector2i = data["footprint"]
 	var foot_origin: Vector2i = data["foot_origin"]
+	var income: int = int(data.get("income", 0))
 
 	for x in range(footprint.x):
 		for y in range(footprint.y):
 			_cell_owner.erase(foot_origin + Vector2i(x, y))
 	_placed.erase(anchor)
 	building_layer.erase_cell(anchor)
-	return true
+	return income

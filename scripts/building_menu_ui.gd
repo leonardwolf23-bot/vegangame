@@ -1,6 +1,5 @@
 extends CanvasLayer
-## Bau-Menü für im Editor gebaute Buttons.
-## CanvasLayer-Root → Toggle-Button + Panel mit Gebäude-Buttons.
+## Bau-Menü + Geld-Anzeige für im Editor gebaute UI.
 
 
 @export var building_placer_path: NodePath = NodePath("../BuildingPlacer")
@@ -8,6 +7,8 @@ extends CanvasLayer
 @export var build_panel: Control
 @export var button_house: Button
 @export var button_fabrik: Button
+@export var money_label: Label
+@export var income_label: Label
 
 var _placer: Node2D
 var _menu_open: bool = false
@@ -28,6 +29,11 @@ func _ready() -> void:
 	if button_fabrik:
 		button_fabrik.pressed.connect(_on_select.bind(1))
 
+	GameState.money_changed.connect(_on_money_changed)
+	GameState.income_changed.connect(_on_income_changed)
+	_refresh_money_ui()
+	_refresh_building_buttons()
+
 	if _placer and _placer.has_method("set_build_mode"):
 		_placer.set_build_mode(false)
 
@@ -46,3 +52,31 @@ func _on_toggle_menu() -> void:
 func _on_select(index: int) -> void:
 	if _placer and _placer.has_method("select_building"):
 		_placer.select_building(index)
+
+
+func _on_money_changed(_new_amount: int) -> void:
+	_refresh_money_ui()
+
+
+func _on_income_changed(_income: float) -> void:
+	_refresh_money_ui()
+
+
+func _refresh_money_ui() -> void:
+	if money_label:
+		money_label.text = "Geld: %d €" % GameState.money
+	if income_label:
+		income_label.text = "Einkommen: +%d €/s" % int(GameState.get_income_per_second())
+
+
+func _refresh_building_buttons() -> void:
+	var buttons: Array[Button] = [button_house, button_fabrik]
+	for i in buttons.size():
+		var btn: Button = buttons[i]
+		if not btn:
+			continue
+		var building: Dictionary = BuildingCatalog.get_building(i)
+		if building.is_empty():
+			continue
+		btn.text = BuildingCatalog.get_button_label(building)
+		btn.disabled = not GameState.can_afford(BuildingCatalog.get_cost(building))
