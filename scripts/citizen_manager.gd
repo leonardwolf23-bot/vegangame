@@ -37,6 +37,8 @@ func _spawn_citizens() -> void:
 		var citizen: Node2D = citizen_scene.instantiate()
 		citizen.name = "Citizen_%d" % i
 		add_child(citizen)
+		if citizen.has_method("set_grid_manager") and _grid:
+			citizen.set_grid_manager(_grid)
 		if _grid:
 			citizen.global_position = _grid.tile_to_world(Vector2i(i * 2, i))
 		else:

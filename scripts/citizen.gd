@@ -1,5 +1,6 @@
 extends Node2D
 ## Bürger: holt Ressourcen ab und liefert sie an ein Zielgebäude.
+## Läuft nur entlang des isometrischen Tile-Grids (4 Richtungen, kein Schräg-Shortcut).
 
 
 const ARRIVE_DISTANCE: float = 12.0
@@ -15,13 +16,15 @@ var _job: Dictionary = {}
 var _state: String = "idle"
 var _carry_resource: String = ""
 var _carry_amount: float = 0.0
+var _path_waypoints: Array[Vector2] = []
+var _waypoint_index: int = 0
 
+var _grid: GridManager
 var _anim: AnimatedSprite2D
 var _label: Label
 
 
 func _ready() -> void:
-	# Beim F6-Test (nur citizen.tscn) in die Bildschirmmitte setzen.
 	if get_parent() == null or get_tree().current_scene == self:
 		position = Vector2(640, 360)
 
@@ -44,6 +47,10 @@ func _ready() -> void:
 	_play_idle()
 
 
+func set_grid_manager(grid: GridManager) -> void:
+	_grid = grid
+
+
 func is_idle() -> bool:
 	return _state == "idle"
 
@@ -60,7 +67,7 @@ func assign_job(job: Dictionary) -> void:
 	_state = "to_source"
 	_carry_resource = ""
 	_carry_amount = 0.0
-	_update_walk_animation(dest_pos - global_position)
+	_build_path_to(source_pos)
 	_update_label()
 
 
@@ -69,19 +76,50 @@ func _process(delta: float) -> void:
 		"idle":
 			return
 		"to_source":
-			if _walk_toward(ProductionManager.get_building_world_pos(_job["from_anchor"]), delta):
+			if _walk_path(delta):
 				_pickup()
 		"to_dest":
-			if _walk_toward(ProductionManager.get_building_world_pos(_job["to_anchor"]), delta):
+			if _walk_path(delta):
 				_deliver()
 
 
-func _walk_toward(target: Vector2, delta: float) -> bool:
-	var offset := target - global_position
-	if offset.length() <= ARRIVE_DISTANCE:
-		global_position = target
+func _build_path_to(target_world: Vector2) -> void:
+	_path_waypoints.clear()
+	_waypoint_index = 0
+
+	if not _grid:
+		_path_waypoints.append(target_world)
+		return
+
+	var from_tile := _grid.world_to_tile(global_position)
+	var to_tile := _grid.world_to_tile(target_world)
+	var tiles: Array[Vector2i] = _grid.find_path(from_tile, to_tile)
+
+	for tile in tiles:
+		_path_waypoints.append(_grid.tile_to_world(tile))
+
+	if _path_waypoints.is_empty():
+		_path_waypoints.append(target_world)
+
+
+func _walk_path(delta: float) -> bool:
+	if _path_waypoints.is_empty():
+		return true
+
+	if _waypoint_index >= _path_waypoints.size():
 		_play_idle()
 		return true
+
+	var target: Vector2 = _path_waypoints[_waypoint_index]
+	var offset := target - global_position
+
+	if offset.length() <= ARRIVE_DISTANCE:
+		global_position = target
+		_waypoint_index += 1
+		if _waypoint_index >= _path_waypoints.size():
+			_play_idle()
+			return true
+		return false
 
 	global_position += offset.normalized() * walk_speed * delta
 	_update_walk_animation(offset)
@@ -154,6 +192,7 @@ func _pickup() -> void:
 		leftover["amount"] = float(_job["amount"]) - taken
 		ProductionManager.release_job(leftover)
 	_state = "to_dest"
+	_build_path_to(ProductionManager.get_building_world_pos(_job["to_anchor"]))
 	_update_label()
 
 
@@ -168,6 +207,8 @@ func _deliver() -> void:
 func _reset_idle() -> void:
 	_state = "idle"
 	_job = {}
+	_path_waypoints.clear()
+	_waypoint_index = 0
 	_update_label()
 	_play_idle()
 

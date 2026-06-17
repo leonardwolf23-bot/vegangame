@@ -8,6 +8,13 @@ extends Node
 var _placed: Dictionary = {}
 var _cell_owner: Dictionary = {}
 
+const _CARDINAL_DIRS: Array[Vector2i] = [
+	Vector2i(1, 0),
+	Vector2i(-1, 0),
+	Vector2i(0, 1),
+	Vector2i(0, -1),
+]
+
 
 func world_to_tile(world_pos: Vector2) -> Vector2i:
 	if not building_layer:
@@ -21,6 +28,45 @@ func tile_to_world(tile: Vector2i) -> Vector2:
 		return Vector2.ZERO
 	var local_pos := building_layer.map_to_local(tile)
 	return building_layer.to_global(local_pos)
+
+
+func can_walk_on(tile: Vector2i) -> bool:
+	return has_ground(tile)
+
+
+func find_path(from: Vector2i, to: Vector2i) -> Array[Vector2i]:
+	if from == to:
+		return []
+	if not can_walk_on(to):
+		return []
+
+	var queue: Array[Vector2i] = [from]
+	var came_from: Dictionary = {from: from}
+	var head := 0
+
+	while head < queue.size():
+		var current: Vector2i = queue[head]
+		head += 1
+		if current == to:
+			break
+		for dir in _CARDINAL_DIRS:
+			var next := current + dir
+			if not can_walk_on(next):
+				continue
+			if came_from.has(next):
+				continue
+			came_from[next] = current
+			queue.append(next)
+
+	if not came_from.has(to):
+		return []
+
+	var path: Array[Vector2i] = []
+	var step := to
+	while step != from:
+		path.push_front(step)
+		step = came_from[step]
+	return path
 
 
 func has_ground(tile: Vector2i) -> bool:
