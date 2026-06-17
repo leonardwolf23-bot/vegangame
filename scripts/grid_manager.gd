@@ -71,23 +71,23 @@ func find_path(from: Vector2i, to: Vector2i) -> Array[Vector2i]:
 
 func get_walk_anim_suffix(from_tile: Vector2i, to_tile: Vector2i) -> StringName:
 	var delta := to_tile - from_tile
-	# Isometrisches Grid: exakt ein Tile pro Schritt, keine Diagonalen.
+	# Isometrisches 64x32 Grid: jeder Tile-Schritt ist eine Schräg-Richtung.
 	match delta:
 		Vector2i(1, 0):
-			return &"east"   # bildschirm: unten-rechts
+			return &"southeast"
 		Vector2i(-1, 0):
-			return &"west"   # bildschirm: oben-links
+			return &"northwest"
 		Vector2i(0, 1):
-			return &"south"  # bildschirm: unten-links
+			return &"southwest"
 		Vector2i(0, -1):
-			return &"north"  # bildschirm: oben-rechts
+			return &"northeast"
 		_:
 			return _world_offset_to_anim_suffix(tile_to_world(to_tile) - tile_to_world(from_tile))
 
 
 func _world_offset_to_anim_suffix(offset: Vector2) -> StringName:
 	if offset.length_squared() < 0.01:
-		return &"south"
+		return &"southeast"
 
 	var origin := tile_to_world(Vector2i.ZERO)
 	var step_x := (tile_to_world(Vector2i(1, 0)) - origin).normalized()
@@ -97,8 +97,8 @@ func _world_offset_to_anim_suffix(offset: Vector2) -> StringName:
 	var dot_y := dir.dot(step_y)
 
 	if absf(dot_x) >= absf(dot_y):
-		return &"east" if dot_x >= 0.0 else &"west"
-	return &"south" if dot_y >= 0.0 else &"north"
+		return &"southeast" if dot_x >= 0.0 else &"northwest"
+	return &"southwest" if dot_y >= 0.0 else &"northeast"
 
 
 func has_ground(tile: Vector2i) -> bool:

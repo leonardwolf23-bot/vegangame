@@ -3,7 +3,12 @@ extends Node2D
 ## Läuft nur entlang des isometrischen Tile-Grids (4 Richtungen, kein Schräg-Shortcut).
 
 
-const ARRIVE_DISTANCE: float = 12.0
+const ISO_WALK_SUFFIXES: Array[StringName] = [
+	&"northeast",
+	&"southeast",
+	&"southwest",
+	&"northwest",
+]
 
 @export var walk_speed: float = 90.0
 @export var sprite_frames: SpriteFrames
@@ -174,7 +179,9 @@ func _update_walk_animation(offset: Vector2, iso_suffix: StringName) -> void:
 		_anim.play(dir_anim)
 		_anim.flip_h = false
 	elif _has_animation(anim):
-		push_warning_once("Citizen: '%s' fehlt, Fallback auf '%s'" % [dir_anim, anim])
+		if not _warned_anims.has(dir_anim):
+			_warned_anims[dir_anim] = true
+			push_warning("Citizen: '%s' fehlt, Fallback auf '%s'" % [dir_anim, anim])
 		_anim.play(anim)
 		_anim.flip_h = iso_suffix in [&"west", &"south"]
 
