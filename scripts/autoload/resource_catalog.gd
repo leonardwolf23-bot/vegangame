@@ -3,9 +3,9 @@ extends Node
 
 const SECONDS_PER_DAY: float = 30.0
 
-const UPKEEP_STROM: float = 3.0
-const UPKEEP_ESSEN: float = 1.0
-const UPKEEP_WASSER: float = 10.0
+const UPKEEP_STROM: float = 1.0
+const UPKEEP_ESSEN: float = 0.5
+const UPKEEP_WASSER: float = 3.0
 
 const DISPLAY_NAMES: Dictionary = {
 	"strom": "Strom (kWh)",
@@ -45,9 +45,9 @@ func get_resource_name(resource_id: String) -> String:
 
 func get_start_stock() -> Dictionary:
 	return {
-		"strom": 60.0,
-		"essen": 30.0,
-		"wasser": 150.0,
+		"strom": 200.0,
+		"essen": 80.0,
+		"wasser": 400.0,
 		"holz": 10.0,
 		"stein": 10.0,
 		"seitanpulver": 5.0,

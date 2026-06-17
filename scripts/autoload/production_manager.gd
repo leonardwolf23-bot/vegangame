@@ -226,6 +226,8 @@ func create_transport_jobs() -> Array:
 func get_summary_lines(max_lines: int = 8) -> PackedStringArray:
 	var lines: PackedStringArray = []
 	lines.append("Tag %d  (%.0fs/Tag)" % [day_count, ResourceCatalog.SECONDS_PER_DAY])
+	lines.append("(Ware in Gebäuden + Lager)")
+
 	var totals: Dictionary = stock.duplicate()
 	for key in _local_stock:
 		for resource_id in _local_stock[key]:
@@ -245,6 +247,8 @@ func get_summary_lines(max_lines: int = 8) -> PackedStringArray:
 			break
 	if _buildings.is_empty():
 		lines.append("Keine Produktionsgebäude")
+	elif shown == 0:
+		lines.append("Noch keine Ware — Bauernhof o.ä. bauen")
 	return lines
 
 
@@ -256,9 +260,12 @@ func _run_day() -> void:
 		var building: Dictionary = BuildingCatalog.get_building(data["building_index"])
 		if building.is_empty():
 			continue
-		if not _pay_upkeep(building):
+		var kind: String = building.get("kind", "")
+		if BuildingCatalog.is_housing(building):
 			continue
-		_run_building_production(anchor, building, data["modes"])
+		var upkeep_ok := _pay_upkeep(building)
+		var scale := 1.0 if upkeep_ok else 0.5
+		_run_building_production(anchor, building, data["modes"], scale)
 	day_completed.emit(day_count)
 	resources_changed.emit()
 
@@ -272,17 +279,19 @@ func _pay_upkeep(building: Dictionary) -> bool:
 	return true
 
 
-func _run_building_production(anchor: Vector2i, building: Dictionary, modes: Array) -> void:
+func _run_building_production(anchor: Vector2i, building: Dictionary, modes: Array, scale: float = 1.0) -> void:
 	var kind: String = building.get("kind", "passive")
 	match kind:
 		"extractor":
-			_add_local_outputs(anchor, building.get("outputs_per_day", {}))
+			_add_local_outputs_scaled(anchor, building.get("outputs_per_day", {}), scale)
 		"multi_extractor":
 			for mode_id in modes:
 				var mode: Dictionary = BuildingCatalog.get_mode(building, str(mode_id))
 				if not mode.is_empty():
-					_add_local_outputs(anchor, mode.get("outputs_per_day", {}))
+					_add_local_outputs_scaled(anchor, mode.get("outputs_per_day", {}), scale)
 		"processor", "multi_recipe":
+			if scale < 1.0:
+				return
 			for mode_id in modes:
 				var recipe: Dictionary = BuildingCatalog.get_recipe(building, str(mode_id))
 				if recipe.is_empty():
@@ -290,6 +299,11 @@ func _run_building_production(anchor: Vector2i, building: Dictionary, modes: Arr
 				if _can_process_recipe(anchor, recipe):
 					_spend_recipe_inputs(anchor, recipe.get("inputs", {}))
 					_add_local_outputs(anchor, recipe.get("outputs", {}))
+
+
+func _add_local_outputs_scaled(anchor: Vector2i, outputs: Dictionary, scale: float) -> void:
+	for resource_id in outputs:
+		add_to_local(anchor, resource_id, float(outputs[resource_id]) * scale)
 
 
 func _add_local_outputs(anchor: Vector2i, outputs: Dictionary) -> void:
