@@ -70,8 +70,19 @@ func find_path(from: Vector2i, to: Vector2i) -> Array[Vector2i]:
 
 
 func get_walk_anim_suffix(from_tile: Vector2i, to_tile: Vector2i) -> StringName:
-	var offset := tile_to_world(to_tile) - tile_to_world(from_tile)
-	return _world_offset_to_anim_suffix(offset)
+	var delta := to_tile - from_tile
+	# Isometrisches Grid: exakt ein Tile pro Schritt, keine Diagonalen.
+	match delta:
+		Vector2i(1, 0):
+			return &"east"   # bildschirm: unten-rechts
+		Vector2i(-1, 0):
+			return &"west"   # bildschirm: oben-links
+		Vector2i(0, 1):
+			return &"south"  # bildschirm: unten-links
+		Vector2i(0, -1):
+			return &"north"  # bildschirm: oben-rechts
+		_:
+			return _world_offset_to_anim_suffix(tile_to_world(to_tile) - tile_to_world(from_tile))
 
 
 func _world_offset_to_anim_suffix(offset: Vector2) -> StringName:

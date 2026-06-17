@@ -11,6 +11,7 @@ const ARRIVE_DISTANCE: float = 12.0
 @export var idle_anim: StringName = &"idle"
 @export var walk_anim: StringName = &"walk"
 @export var carry_anim: StringName = &"carry_walk"
+@export var debug_walk_anim: bool = false
 
 var _job: Dictionary = {}
 var _state: String = "idle"
@@ -18,6 +19,7 @@ var _carry_resource: String = ""
 var _carry_amount: float = 0.0
 var _path_waypoints: Array[Vector2] = []
 var _path_tiles: Array[Vector2i] = []
+var _path_from_tile: Vector2i = Vector2i.ZERO
 var _waypoint_index: int = 0
 
 var _grid: GridManager
@@ -86,6 +88,7 @@ func _process(delta: float) -> void:
 
 func _build_path_to(target_world: Vector2) -> void:
 	_path_waypoints.clear()
+	_path_tiles.clear()
 	_waypoint_index = 0
 
 	if not _grid:
@@ -94,9 +97,9 @@ func _build_path_to(target_world: Vector2) -> void:
 
 	var from_tile := _grid.world_to_tile(global_position)
 	var to_tile := _grid.world_to_tile(target_world)
-	var tiles: Array[Vector2i] = _grid.find_path(from_tile, to_tile)
+	_path_tiles = _grid.find_path(from_tile, to_tile)
 
-	for tile in tiles:
+	for tile in _path_tiles:
 		_path_waypoints.append(_grid.tile_to_world(tile))
 
 	if _path_waypoints.is_empty():
@@ -123,11 +126,23 @@ func _walk_path(delta: float) -> bool:
 		return false
 
 	global_position += offset.normalized() * walk_speed * delta
-	_update_walk_animation(offset)
+	_update_walk_animation(offset, _get_step_anim_suffix())
 	return false
 
 
-func _update_walk_animation(offset: Vector2) -> void:
+func _get_step_anim_suffix() -> StringName:
+	if not _grid or _waypoint_index >= _path_tiles.size():
+		return &"south"
+	var to_tile := _path_tiles[_waypoint_index]
+	var from_tile: Vector2i
+	if _waypoint_index == 0:
+		from_tile = _grid.world_to_tile(global_position)
+	else:
+		from_tile = _path_tiles[_waypoint_index - 1]
+	return _grid.get_walk_anim_suffix(from_tile, to_tile)
+
+
+func _update_walk_animation(offset: Vector2, iso_suffix: StringName) -> void:
 	if not _anim or not _anim.sprite_frames:
 		return
 
@@ -135,21 +150,13 @@ func _update_walk_animation(offset: Vector2) -> void:
 	if not _has_animation(anim):
 		anim = walk_anim
 
-	var dir_anim := _direction_anim_name(anim, offset)
+	var dir_anim := StringName("%s_%s" % [anim, iso_suffix])
 	if _has_animation(dir_anim):
 		_anim.play(dir_anim)
+		_anim.flip_h = false
 	elif _has_animation(anim):
 		_anim.play(anim)
-		_anim.flip_h = offset.x < 0.0
-
-
-func _direction_anim_name(base: StringName, offset: Vector2) -> StringName:
-	var suffix := "south"
-	if absf(offset.x) > absf(offset.y):
-		suffix = "east" if offset.x > 0.0 else "west"
-	else:
-		suffix = "south" if offset.y > 0.0 else "north"
-	return StringName("%s_%s" % [base, suffix])
+		_anim.flip_h = iso_suffix == &"west" or offset.x < 0.0
 
 
 func _has_animation(anim_name: StringName) -> bool:
@@ -209,6 +216,7 @@ func _reset_idle() -> void:
 	_state = "idle"
 	_job = {}
 	_path_waypoints.clear()
+	_path_tiles.clear()
 	_waypoint_index = 0
 	_update_label()
 	_play_idle()
