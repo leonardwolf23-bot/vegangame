@@ -3,7 +3,7 @@ extends Node2D
 ## Läuft nur entlang des isometrischen Tile-Grids (4 Richtungen, kein Schräg-Shortcut).
 
 
-const ARRIVE_DISTANCE: float = 12.0
+const ARRIVE_DISTANCE: float = 2.0
 
 const ISO_WALK_SUFFIXES: Array[StringName] = [
 	&"northeast",
