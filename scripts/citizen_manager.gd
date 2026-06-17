@@ -26,8 +26,7 @@ func _ready() -> void:
 		)
 	else:
 		ProductionManager.bind_grid_manager(_grid)
-	_spawn_citizens()
-	call_deferred("_assign_jobs")
+	call_deferred("_spawn_citizens")
 
 
 func _process(delta: float) -> void:
@@ -50,6 +49,7 @@ func _spawn_citizens() -> void:
 		else:
 			citizen.global_position = Vector2(100 + i * 20, 100)
 		_citizens.append(citizen)
+	call_deferred("_assign_jobs")
 
 
 func _assign_jobs() -> void:
