@@ -110,12 +110,12 @@ func _rebuild_mode_panel() -> void:
 		var mode_id: String = str(entry.get("id", ""))
 		check.text = str(entry.get("label", mode_id))
 		check.button_pressed = mode_id in active
-		check.toggled.connect(func(on): _on_mode_toggled(mode_id, on))
+		check.toggled.connect(_on_mode_toggled.bind(mode_id))
 		mode_list.add_child(check)
 		_mode_checks.append(check)
 
 
-func _on_mode_toggled(mode_id: String, enabled: bool) -> void:
+func _on_mode_toggled(enabled: bool, mode_id: String) -> void:
 	var modes: Array = ProductionManager.get_default_modes(_selected_index)
 	if enabled:
 		if mode_id not in modes:
