@@ -5,6 +5,8 @@ extends Node2D
 const ARRIVE_DISTANCE: float = 12.0
 
 @export var walk_speed: float = 90.0
+@export var sprite_frames: SpriteFrames
+@export var anim_node_path: NodePath = ^"AnimatedSprite2D"
 @export var idle_anim: StringName = &"idle"
 @export var walk_anim: StringName = &"walk"
 @export var carry_anim: StringName = &"carry_walk"
@@ -14,11 +16,27 @@ var _state: String = "idle"
 var _carry_resource: String = ""
 var _carry_amount: float = 0.0
 
-@onready var _anim: AnimatedSprite2D = $AnimatedSprite2D
-@onready var _label: Label = $Label
+var _anim: AnimatedSprite2D
+var _label: Label
 
 
 func _ready() -> void:
+	_anim = get_node_or_null(anim_node_path) as AnimatedSprite2D
+	_label = get_node_or_null(^"Label") as Label
+
+	if not _anim:
+		push_error("Citizen: AnimatedSprite2D nicht gefunden unter '%s'" % anim_node_path)
+		return
+
+	if sprite_frames:
+		_anim.sprite_frames = sprite_frames
+
+	_anim.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+
+	if not _anim.sprite_frames:
+		push_warning("Citizen: Keine SpriteFrames! Weise sie am AnimatedSprite2D oder am Citizen-Node zu.")
+		return
+
 	_play_idle()
 
 
@@ -74,7 +92,6 @@ func _update_walk_animation(offset: Vector2) -> void:
 	if not _has_animation(anim):
 		anim = walk_anim
 
-	# Richtungs-Animationen: walk_south, walk_north, walk_east, walk_west
 	var dir_anim := _direction_anim_name(anim, offset)
 	if _has_animation(dir_anim):
 		_anim.play(dir_anim)
@@ -97,8 +114,23 @@ func _has_animation(anim_name: StringName) -> bool:
 
 
 func _play_idle() -> void:
-	if _anim and _anim.sprite_frames and _has_animation(idle_anim):
+	if not _anim or not _anim.sprite_frames:
+		return
+
+	if _has_animation(idle_anim):
 		_anim.play(idle_anim)
+		return
+
+	var names: PackedStringArray = _anim.sprite_frames.get_animation_names()
+	if names.is_empty():
+		push_warning("Citizen: SpriteFrames hat keine Animationen.")
+		return
+
+	push_warning(
+		"Citizen: Animation '%s' fehlt. Verfügbar: %s — spiele '%s'."
+		% [idle_anim, ", ".join(names), names[0]]
+	)
+	_anim.play(names[0])
 
 
 func _pickup() -> void:
