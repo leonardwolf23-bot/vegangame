@@ -3,6 +3,8 @@ extends Node2D
 ## Läuft nur entlang des isometrischen Tile-Grids (4 Richtungen, kein Schräg-Shortcut).
 
 
+const ARRIVE_DISTANCE: float = 12.0
+
 const ISO_WALK_SUFFIXES: Array[StringName] = [
 	&"northeast",
 	&"southeast",
@@ -143,7 +145,7 @@ func _walk_path(delta: float) -> bool:
 
 func _get_step_anim_suffix() -> StringName:
 	if not _grid or _waypoint_index >= _path_tiles.size():
-		return &"south"
+		return &"southeast"
 	var to_tile := _path_tiles[_waypoint_index]
 	var from_tile: Vector2i
 	if _waypoint_index == 0:
@@ -158,7 +160,7 @@ func _audit_walk_animations() -> void:
 		return
 	var names: PackedStringArray = _anim.sprite_frames.get_animation_names()
 	print("Citizen SpriteFrames: ", names)
-	for suffix in ["north", "south", "east", "west"]:
+	for suffix in ISO_WALK_SUFFIXES:
 		var key := StringName("%s_%s" % [walk_anim, suffix])
 		if not _has_animation(key):
 			push_warning("Citizen: Lauf-Animation fehlt: %s" % key)
@@ -174,16 +176,24 @@ func _update_walk_animation(offset: Vector2, iso_suffix: StringName) -> void:
 
 	var dir_anim := StringName("%s_%s" % [anim, iso_suffix])
 	if debug_walk_anim:
-		print("Citizen spielt: %s (Schritt %s)" % [dir_anim, iso_suffix])
+		print("Citizen spielt: %s" % dir_anim)
 	if _has_animation(dir_anim):
 		_anim.play(dir_anim)
 		_anim.flip_h = false
-	elif _has_animation(anim):
+		return
+
+	# Fallback: exakter Name ohne Prefix (z. B. nur "walk_northeast")
+	if _has_animation(iso_suffix):
+		_anim.play(iso_suffix)
+		_anim.flip_h = false
+		return
+
+	if _has_animation(anim):
 		if not _warned_anims.has(dir_anim):
 			_warned_anims[dir_anim] = true
 			push_warning("Citizen: '%s' fehlt, Fallback auf '%s'" % [dir_anim, anim])
 		_anim.play(anim)
-		_anim.flip_h = iso_suffix in [&"west", &"south"]
+		_anim.flip_h = false
 
 
 func _has_animation(anim_name: StringName) -> bool:
