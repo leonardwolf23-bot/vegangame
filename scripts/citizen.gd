@@ -17,6 +17,7 @@ var _state: String = "idle"
 var _carry_resource: String = ""
 var _carry_amount: float = 0.0
 var _path_waypoints: Array[Vector2] = []
+var _path_tiles: Array[Vector2i] = []
 var _waypoint_index: int = 0
 
 var _grid: GridManager

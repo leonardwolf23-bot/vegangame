@@ -69,6 +69,27 @@ func find_path(from: Vector2i, to: Vector2i) -> Array[Vector2i]:
 	return path
 
 
+func get_walk_anim_suffix(from_tile: Vector2i, to_tile: Vector2i) -> StringName:
+	var offset := tile_to_world(to_tile) - tile_to_world(from_tile)
+	return _world_offset_to_anim_suffix(offset)
+
+
+func _world_offset_to_anim_suffix(offset: Vector2) -> StringName:
+	if offset.length_squared() < 0.01:
+		return &"south"
+
+	var origin := tile_to_world(Vector2i.ZERO)
+	var step_x := (tile_to_world(Vector2i(1, 0)) - origin).normalized()
+	var step_y := (tile_to_world(Vector2i(0, 1)) - origin).normalized()
+	var dir := offset.normalized()
+	var dot_x := dir.dot(step_x)
+	var dot_y := dir.dot(step_y)
+
+	if absf(dot_x) >= absf(dot_y):
+		return &"east" if dot_x >= 0.0 else &"west"
+	return &"south" if dot_y >= 0.0 else &"north"
+
+
 func has_ground(tile: Vector2i) -> bool:
 	if not ground_layer:
 		return true
