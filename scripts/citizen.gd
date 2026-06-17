@@ -81,6 +81,10 @@ func assign_job(job: Dictionary) -> void:
 	_carry_resource = ""
 	_carry_amount = 0.0
 	_build_path_to(source_pos)
+	if _path_waypoints.is_empty():
+		ProductionManager.release_job(_job)
+		_reset_idle()
+		return
 	_update_label()
 
 
@@ -106,15 +110,21 @@ func _build_path_to(target_world: Vector2) -> void:
 	_path_waypoints.clear()
 	_path_tiles.clear()
 	_waypoint_index = 0
+	_current_walk_anim = &""
 
-	if not _grid:
-		_path_waypoints.append(target_world)
+	if not _grid or not _grid.building_layer:
+		push_warning("Citizen: Kein Grid — kann keinen Tile-Pfad berechnen.")
 		return
 
 	var from_tile := _grid.world_to_tile(global_position)
+	if _grid.can_walk_on(from_tile):
+		global_position = _grid.tile_to_world(from_tile)
+		_path_from_tile = from_tile
+	else:
+		_path_from_tile = from_tile
+
 	var to_tile := _grid.world_to_tile(target_world)
-	_path_from_tile = from_tile
-	_path_tiles = _grid.find_path(from_tile, to_tile)
+	_path_tiles = _grid.find_path_to_near(from_tile, to_tile)
 
 	if debug_walk_anim:
 		print("Citizen Pfad: %s -> %s (%d Schritte)" % [from_tile, to_tile, _path_tiles.size()])
@@ -123,7 +133,7 @@ func _build_path_to(target_world: Vector2) -> void:
 		_path_waypoints.append(_grid.tile_to_world(tile))
 
 	if _path_waypoints.is_empty():
-		_path_waypoints.append(target_world)
+		push_warning("Citizen: Kein begehbarer Pfad von %s nach %s" % [from_tile, to_tile])
 
 
 func _walk_path(delta: float) -> bool:
@@ -145,6 +155,8 @@ func _walk_path(delta: float) -> bool:
 			_current_walk_anim = &""
 			_play_idle()
 			return true
+		var next_offset := _path_waypoints[_waypoint_index] - global_position
+		_update_walk_animation(next_offset, _get_step_anim_suffix())
 		return false
 
 	global_position += offset.normalized() * move_dist
@@ -153,15 +165,21 @@ func _walk_path(delta: float) -> bool:
 
 
 func _get_step_anim_suffix() -> StringName:
-	if not _grid or _waypoint_index >= _path_tiles.size():
+	if not _grid:
 		return &"southeast"
-	var to_tile := _path_tiles[_waypoint_index]
-	var from_tile: Vector2i
-	if _waypoint_index == 0:
-		from_tile = _path_from_tile
-	else:
-		from_tile = _path_tiles[_waypoint_index - 1]
-	return _grid.get_walk_anim_suffix(from_tile, to_tile)
+	if _waypoint_index < _path_tiles.size():
+		var to_tile := _path_tiles[_waypoint_index]
+		var from_tile: Vector2i
+		if _waypoint_index == 0:
+			from_tile = _path_from_tile
+		else:
+			from_tile = _path_tiles[_waypoint_index - 1]
+		return _grid.get_walk_anim_suffix(from_tile, to_tile)
+	if _waypoint_index < _path_waypoints.size():
+		var move_offset := _path_waypoints[_waypoint_index] - global_position
+		if move_offset.length_squared() > 0.01:
+			return _grid.offset_to_walk_suffix(move_offset)
+	return &"southeast"
 
 
 func _audit_walk_animations() -> void:
@@ -254,6 +272,10 @@ func _pickup() -> void:
 		ProductionManager.release_job(leftover)
 	_state = "to_dest"
 	_build_path_to(ProductionManager.get_building_world_pos(_job["to_anchor"]))
+	if _path_waypoints.is_empty():
+		ProductionManager.release_job(_job)
+		_reset_idle()
+		return
 	_update_label()
 
 

@@ -37,7 +37,7 @@ func can_walk_on(tile: Vector2i) -> bool:
 func find_path(from: Vector2i, to: Vector2i) -> Array[Vector2i]:
 	if from == to:
 		return []
-	if not can_walk_on(to):
+	if not can_walk_on(from):
 		return []
 
 	var queue: Array[Vector2i] = [from]
@@ -61,6 +61,32 @@ func find_path(from: Vector2i, to: Vector2i) -> Array[Vector2i]:
 	if not came_from.has(to):
 		return []
 
+	return _reconstruct_path(from, to, came_from)
+
+
+func find_path_to_near(from: Vector2i, to: Vector2i) -> Array[Vector2i]:
+	var path := find_path(from, to)
+	if not path.is_empty():
+		return path
+
+	var best_path: Array[Vector2i] = []
+	for dir in _CARDINAL_DIRS:
+		var alt := to + dir
+		if not can_walk_on(alt):
+			continue
+		path = find_path(from, alt)
+		if path.is_empty():
+			continue
+		if best_path.is_empty() or path.size() < best_path.size():
+			best_path = path
+	return best_path
+
+
+func offset_to_walk_suffix(offset: Vector2) -> StringName:
+	return _world_offset_to_anim_suffix(offset)
+
+
+func _reconstruct_path(from: Vector2i, to: Vector2i, came_from: Dictionary) -> Array[Vector2i]:
 	var path: Array[Vector2i] = []
 	var step := to
 	while step != from:
