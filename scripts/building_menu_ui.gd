@@ -107,9 +107,10 @@ func _rebuild_mode_panel() -> void:
 
 	for entry in entries:
 		var check := CheckBox.new()
-		check.text = str(entry.get("label", entry.get("id", "?")))
-		check.button_pressed = str(entry.get("id", "")) in active
-		check.toggled.connect(_on_mode_toggled.bind(str(entry.get("id", ""))))
+		var mode_id: String = str(entry.get("id", ""))
+		check.text = str(entry.get("label", mode_id))
+		check.button_pressed = mode_id in active
+		check.toggled.connect(func(on): _on_mode_toggled(mode_id, on))
 		mode_list.add_child(check)
 		_mode_checks.append(check)
 
