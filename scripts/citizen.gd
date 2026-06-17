@@ -21,6 +21,10 @@ var _label: Label
 
 
 func _ready() -> void:
+	# Beim F6-Test (nur citizen.tscn) in die Bildschirmmitte setzen.
+	if get_parent() == null or get_tree().current_scene == self:
+		position = Vector2(640, 360)
+
 	_anim = get_node_or_null(anim_node_path) as AnimatedSprite2D
 	_label = get_node_or_null(^"Label") as Label
 
