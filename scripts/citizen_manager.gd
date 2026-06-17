@@ -38,7 +38,7 @@ func _process(delta: float) -> void:
 
 
 func _spawn_citizens() -> void:
-	var parent: Node = _citizens_parent if _citizens_parent else self
+	var parent: Node = (_citizens_parent as Node) if _citizens_parent else self
 	for i in citizen_count:
 		var citizen: Node2D = citizen_scene.instantiate()
 		citizen.name = "Citizen_%d" % i
