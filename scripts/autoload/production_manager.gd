@@ -61,6 +61,8 @@ func register_building(anchor: Vector2i, building_index: int, world_pos: Vector2
 	if not _local_stock.has(key):
 		_local_stock[key] = {}
 
+	_bootstrap_production(anchor, building, modes)
+
 
 func unregister_building(anchor: Vector2i) -> void:
 	var key := _anchor_key(anchor)
@@ -293,6 +295,19 @@ func _run_building_production(anchor: Vector2i, building: Dictionary, modes: Arr
 func _add_local_outputs(anchor: Vector2i, outputs: Dictionary) -> void:
 	for resource_id in outputs:
 		add_to_local(anchor, resource_id, float(outputs[resource_id]))
+
+
+func _bootstrap_production(anchor: Vector2i, building: Dictionary, modes: Array) -> void:
+	# Sofort erste Ware ins lokale Lager, damit Bürger nicht 30s warten müssen.
+	var kind: String = building.get("kind", "")
+	match kind:
+		"extractor":
+			_add_local_outputs(anchor, building.get("outputs_per_day", {}))
+		"multi_extractor":
+			for mode_id in modes:
+				var mode: Dictionary = BuildingCatalog.get_mode(building, str(mode_id))
+				if not mode.is_empty():
+					_add_local_outputs(anchor, mode.get("outputs_per_day", {}))
 
 
 func _can_process_recipe(anchor: Vector2i, recipe: Dictionary) -> bool:

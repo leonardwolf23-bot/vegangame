@@ -14,6 +14,11 @@ var _grid: GridManager
 
 func _ready() -> void:
 	_grid = get_node_or_null(grid_manager_path) as GridManager
+	if not _grid:
+		push_warning(
+			"CitizenManager: GridManager nicht gefunden unter '%s'. Pfad muss ../../GridManager sein."
+			% grid_manager_path
+		)
 	_spawn_citizens()
 
 

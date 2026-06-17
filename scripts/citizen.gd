@@ -27,6 +27,12 @@ func is_idle() -> bool:
 
 
 func assign_job(job: Dictionary) -> void:
+	var source_pos := ProductionManager.get_building_world_pos(job["from_anchor"])
+	var dest_pos := ProductionManager.get_building_world_pos(job["to_anchor"])
+	if source_pos == Vector2.ZERO or dest_pos == Vector2.ZERO:
+		ProductionManager.release_job(job)
+		return
+
 	_job = job.duplicate()
 	_state = "to_source"
 	_carry_resource = ""
@@ -34,7 +40,7 @@ func assign_job(job: Dictionary) -> void:
 	_update_label()
 
 
-func _physics_process(delta: float) -> void:
+func _process(delta: float) -> void:
 	match _state:
 		"idle":
 			return

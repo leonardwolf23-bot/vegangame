@@ -29,5 +29,6 @@ script = ExtResource("4_placer")
 [node name="CitizenManager" type="Node2D" parent="World"]
 y_sort_enabled = true
 script = ExtResource("6_citizens")
+grid_manager_path = NodePath("../../GridManager")
 
 [node name="UI" parent="." instance=ExtResource("5_ui")]
