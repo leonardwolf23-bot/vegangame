@@ -19,7 +19,10 @@ func _ready() -> void:
 			"CitizenManager: GridManager nicht gefunden unter '%s'. Pfad muss ../../GridManager sein."
 			% grid_manager_path
 		)
+	else:
+		ProductionManager.bind_grid_manager(_grid)
 	_spawn_citizens()
+	call_deferred("_assign_jobs")
 
 
 func _process(delta: float) -> void:
@@ -33,15 +36,17 @@ func _spawn_citizens() -> void:
 	for i in citizen_count:
 		var citizen: Node2D = citizen_scene.instantiate()
 		citizen.name = "Citizen_%d" % i
-		if _grid:
-			citizen.global_position = _grid.tile_to_world(Vector2i(i * 2, 0))
-		else:
-			citizen.position = Vector2(100 + i * 20, 100)
 		add_child(citizen)
+		if _grid:
+			citizen.global_position = _grid.tile_to_world(Vector2i(i * 2, i))
+		else:
+			citizen.global_position = Vector2(100 + i * 20, 100)
 		_citizens.append(citizen)
 
 
 func _assign_jobs() -> void:
+	if _grid:
+		ProductionManager.refresh_all_world_positions()
 	var jobs: Array = ProductionManager.create_transport_jobs()
 	if jobs.is_empty():
 		return

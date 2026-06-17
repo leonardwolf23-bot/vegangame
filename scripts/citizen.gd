@@ -30,6 +30,7 @@ func assign_job(job: Dictionary) -> void:
 	var source_pos := ProductionManager.get_building_world_pos(job["from_anchor"])
 	var dest_pos := ProductionManager.get_building_world_pos(job["to_anchor"])
 	if source_pos == Vector2.ZERO or dest_pos == Vector2.ZERO:
+		push_warning("Citizen: Keine Weltposition für Auftrag %s" % str(job))
 		ProductionManager.release_job(job)
 		return
 
@@ -37,6 +38,7 @@ func assign_job(job: Dictionary) -> void:
 	_state = "to_source"
 	_carry_resource = ""
 	_carry_amount = 0.0
+	_update_walk_animation(dest_pos - global_position)
 	_update_label()
 
 

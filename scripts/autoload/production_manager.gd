@@ -21,6 +21,8 @@ var _local_stock: Dictionary = {}
 # job_key -> reserved amount (avoid duplicate assignments)
 var _reserved: Dictionary = {}
 
+var _grid_manager: GridManager
+
 
 func _ready() -> void:
 	_reset_stock()
@@ -85,10 +87,43 @@ func get_building_modes(anchor: Vector2i) -> Array:
 	return _buildings[key]["modes"].duplicate()
 
 
+func bind_grid_manager(grid: GridManager) -> void:
+	_grid_manager = grid
+	refresh_all_world_positions()
+
+
+func refresh_all_world_positions() -> void:
+	if not _grid_manager:
+		return
+	for key in _buildings:
+		var anchor := _key_to_anchor(key)
+		var building_index: int = int(_buildings[key]["building_index"])
+		var building: Dictionary = BuildingCatalog.get_building(building_index)
+		if building.is_empty():
+			continue
+		var foot_origin := BuildingCatalog.get_footprint_origin(anchor, building)
+		var footprint := BuildingCatalog.get_footprint(building)
+		var center_tile := foot_origin + Vector2i(footprint.x / 2, footprint.y / 2)
+		_buildings[key]["world_pos"] = _grid_manager.tile_to_world(center_tile)
+
+
 func get_building_world_pos(anchor: Vector2i) -> Vector2:
 	var key := _anchor_key(anchor)
-	if _buildings.has(key):
-		return _buildings[key].get("world_pos", Vector2.ZERO)
+	if not _buildings.has(key):
+		return Vector2.ZERO
+	var pos: Vector2 = _buildings[key].get("world_pos", Vector2.ZERO)
+	if pos != Vector2.ZERO:
+		return pos
+	if _grid_manager:
+		var building_index: int = int(_buildings[key]["building_index"])
+		var building: Dictionary = BuildingCatalog.get_building(building_index)
+		if not building.is_empty():
+			var foot_origin := BuildingCatalog.get_footprint_origin(anchor, building)
+			var footprint := BuildingCatalog.get_footprint(building)
+			var center_tile := foot_origin + Vector2i(footprint.x / 2, footprint.y / 2)
+			pos = _grid_manager.tile_to_world(center_tile)
+			_buildings[key]["world_pos"] = pos
+			return pos
 	return Vector2.ZERO
 
 
