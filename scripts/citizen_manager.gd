@@ -1,8 +1,9 @@
-extends Node2D
+extends Node
 ## Spawnt Bürger und weist Transport-Aufträge zu.
 
 
 @export var grid_manager_path: NodePath = NodePath("../../GridManager")
+@export var citizens_parent_path: NodePath = NodePath("..")
 @export var citizen_scene: PackedScene = preload("res://scenes/citizen.tscn")
 @export var citizen_count: int = 6
 @export var job_scan_interval: float = 1.0
@@ -10,10 +11,14 @@ extends Node2D
 var _citizens: Array[Node2D] = []
 var _scan_timer: float = 0.0
 var _grid: GridManager
+var _citizens_parent: Node2D
 
 
 func _ready() -> void:
 	_grid = get_node_or_null(grid_manager_path) as GridManager
+	_citizens_parent = get_node_or_null(citizens_parent_path) as Node2D
+	if not _citizens_parent:
+		push_warning("CitizenManager: World-Parent nicht gefunden: %s" % citizens_parent_path)
 	if not _grid:
 		push_warning(
 			"CitizenManager: GridManager nicht gefunden unter '%s'. Pfad muss ../../GridManager sein."
@@ -33,10 +38,11 @@ func _process(delta: float) -> void:
 
 
 func _spawn_citizens() -> void:
+	var parent: Node = _citizens_parent if _citizens_parent else self
 	for i in citizen_count:
 		var citizen: Node2D = citizen_scene.instantiate()
 		citizen.name = "Citizen_%d" % i
-		add_child(citizen)
+		parent.add_child(citizen)
 		if citizen.has_method("set_grid_manager") and _grid:
 			citizen.set_grid_manager(_grid)
 		if _grid:

@@ -84,6 +84,7 @@ func assign_job(job: Dictionary) -> void:
 
 
 func _process(delta: float) -> void:
+	_update_draw_order()
 	match _state:
 		"idle":
 			return
@@ -93,6 +94,11 @@ func _process(delta: float) -> void:
 		"to_dest":
 			if _walk_path(delta):
 				_deliver()
+
+
+func _update_draw_order() -> void:
+	# Gleiche Tiefe wie isometrische Tiles: weiter unten auf dem Screen = weiter vorne.
+	z_index = int(global_position.y)
 
 
 func _build_path_to(target_world: Vector2) -> void:

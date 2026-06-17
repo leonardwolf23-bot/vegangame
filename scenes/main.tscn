@@ -21,13 +21,15 @@ script = ExtResource("3_grid")
 script = ExtResource("4_placer")
 
 [node name="World" type="Node2D" parent="."]
+y_sort_enabled = true
 
 [node name="GroundLayer" type="TileMapLayer" parent="World"]
+z_index = -100
 
 [node name="BuildingLayer" type="TileMapLayer" parent="World"]
-
-[node name="CitizenManager" type="Node2D" parent="World"]
 y_sort_enabled = true
+
+[node name="CitizenManager" type="Node" parent="World"]
 script = ExtResource("6_citizens")
 grid_manager_path = NodePath("../../GridManager")
 

@@ -4,7 +4,6 @@
 
 [node name="Citizen" type="Node2D"]
 y_sort_enabled = true
-z_index = 50
 script = ExtResource("1_citizen")
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
