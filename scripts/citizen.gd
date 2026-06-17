@@ -25,6 +25,7 @@ var _waypoint_index: int = 0
 var _grid: GridManager
 var _anim: AnimatedSprite2D
 var _label: Label
+var _warned_anims: Dictionary = {}
 
 
 func _ready() -> void:
@@ -47,6 +48,7 @@ func _ready() -> void:
 		push_warning("Citizen: Keine SpriteFrames! Weise sie am AnimatedSprite2D oder am Citizen-Node zu.")
 		return
 
+	_audit_walk_animations()
 	_play_idle()
 
 
@@ -97,7 +99,11 @@ func _build_path_to(target_world: Vector2) -> void:
 
 	var from_tile := _grid.world_to_tile(global_position)
 	var to_tile := _grid.world_to_tile(target_world)
+	_path_from_tile = from_tile
 	_path_tiles = _grid.find_path(from_tile, to_tile)
+
+	if debug_walk_anim:
+		print("Citizen Pfad: %s -> %s (%d Schritte)" % [from_tile, to_tile, _path_tiles.size()])
 
 	for tile in _path_tiles:
 		_path_waypoints.append(_grid.tile_to_world(tile))
@@ -136,10 +142,21 @@ func _get_step_anim_suffix() -> StringName:
 	var to_tile := _path_tiles[_waypoint_index]
 	var from_tile: Vector2i
 	if _waypoint_index == 0:
-		from_tile = _grid.world_to_tile(global_position)
+		from_tile = _path_from_tile
 	else:
 		from_tile = _path_tiles[_waypoint_index - 1]
 	return _grid.get_walk_anim_suffix(from_tile, to_tile)
+
+
+func _audit_walk_animations() -> void:
+	if not _anim or not _anim.sprite_frames:
+		return
+	var names: PackedStringArray = _anim.sprite_frames.get_animation_names()
+	print("Citizen SpriteFrames: ", names)
+	for suffix in ["north", "south", "east", "west"]:
+		var key := StringName("%s_%s" % [walk_anim, suffix])
+		if not _has_animation(key):
+			push_warning("Citizen: Lauf-Animation fehlt: %s" % key)
 
 
 func _update_walk_animation(offset: Vector2, iso_suffix: StringName) -> void:
@@ -151,12 +168,15 @@ func _update_walk_animation(offset: Vector2, iso_suffix: StringName) -> void:
 		anim = walk_anim
 
 	var dir_anim := StringName("%s_%s" % [anim, iso_suffix])
+	if debug_walk_anim:
+		print("Citizen spielt: %s (Schritt %s)" % [dir_anim, iso_suffix])
 	if _has_animation(dir_anim):
 		_anim.play(dir_anim)
 		_anim.flip_h = false
 	elif _has_animation(anim):
+		push_warning_once("Citizen: '%s' fehlt, Fallback auf '%s'" % [dir_anim, anim])
 		_anim.play(anim)
-		_anim.flip_h = iso_suffix == &"west" or offset.x < 0.0
+		_anim.flip_h = iso_suffix in [&"west", &"south"]
 
 
 func _has_animation(anim_name: StringName) -> bool:
