@@ -133,7 +133,8 @@ func _place_building(origin: Vector2i) -> void:
 				layer.set_cell(cell, building["source_id"], building["atlas_coords"])
 
 	_grid.register_building(origin, building_index, building)
-	ProductionManager.register_building(origin, building_index)
+	var world_pos := _grid.tile_to_world(origin)
+	ProductionManager.register_building(origin, building_index, world_pos)
 
 	if BuildingCatalog.is_housing(building):
 		GameState.register_housing(BuildingCatalog.get_income(building))

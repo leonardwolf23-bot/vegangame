@@ -1,18 +1,25 @@
 extends Node
-## Autoload: Lager, Tages-Tick, Gebäude-Produktion.
+## Autoload: Lager, Tages-Tick, Gebäude-Produktion, lokale Lager + Transport.
 
 
 signal resources_changed
 signal day_completed(day_number: int)
 
+const CARRY_AMOUNT: float = 3.0
+const LOCAL_STOCK_CAP: float = 30.0
+
 var stock: Dictionary = {}
 var day_timer: float = 0.0
 var day_count: int = 0
 
-# anchor (String) -> {building_index, modes, skip_water_upkeep}
+# anchor (String) -> {building_index, modes, world_pos}
 var _buildings: Dictionary = {}
 # building_index -> Array[String] default modes for new placements
 var _default_modes: Dictionary = {}
+# anchor (String) -> {resource_id: amount}
+var _local_stock: Dictionary = {}
+# job_key -> reserved amount (avoid duplicate assignments)
+var _reserved: Dictionary = {}
 
 
 func _ready() -> void:
@@ -39,7 +46,7 @@ func get_default_modes(building_index: int) -> Array:
 	return _default_modes.get(building_index, []).duplicate()
 
 
-func register_building(anchor: Vector2i, building_index: int) -> void:
+func register_building(anchor: Vector2i, building_index: int, world_pos: Vector2 = Vector2.ZERO) -> void:
 	var building: Dictionary = BuildingCatalog.get_building(building_index)
 	var key := _anchor_key(anchor)
 	var modes: Array = get_default_modes(building_index)
@@ -49,11 +56,17 @@ func register_building(anchor: Vector2i, building_index: int) -> void:
 	_buildings[key] = {
 		"building_index": building_index,
 		"modes": modes,
+		"world_pos": world_pos,
 	}
+	if not _local_stock.has(key):
+		_local_stock[key] = {}
 
 
 func unregister_building(anchor: Vector2i) -> void:
-	_buildings.erase(_anchor_key(anchor))
+	var key := _anchor_key(anchor)
+	_buildings.erase(key)
+	_local_stock.erase(key)
+	_clear_reservations_for_anchor(anchor)
 
 
 func set_building_modes(anchor: Vector2i, modes: Array) -> void:
@@ -70,8 +83,29 @@ func get_building_modes(anchor: Vector2i) -> Array:
 	return _buildings[key]["modes"].duplicate()
 
 
+func get_building_world_pos(anchor: Vector2i) -> Vector2:
+	var key := _anchor_key(anchor)
+	if _buildings.has(key):
+		return _buildings[key].get("world_pos", Vector2.ZERO)
+	return Vector2.ZERO
+
+
 func get_amount(resource_id: String) -> float:
 	return float(stock.get(resource_id, 0.0))
+
+
+func get_local_amount(anchor: Vector2i, resource_id: String) -> float:
+	var key := _anchor_key(anchor)
+	if not _local_stock.has(key):
+		return 0.0
+	return float(_local_stock[key].get(resource_id, 0.0))
+
+
+func get_total_amount(resource_id: String) -> float:
+	var total := get_amount(resource_id)
+	for key in _local_stock:
+		total += float(_local_stock[key].get(resource_id, 0.0))
+	return total
 
 
 func has_resources(costs: Dictionary) -> bool:
@@ -96,16 +130,133 @@ func spend_resources(costs: Dictionary) -> bool:
 	return true
 
 
+func take_from_local(anchor: Vector2i, resource_id: String, amount: float) -> float:
+	var key := _anchor_key(anchor)
+	if not _local_stock.has(key):
+		return 0.0
+	var available := float(_local_stock[key].get(resource_id, 0.0))
+	var reserved := _get_reserved(anchor, resource_id)
+	available = maxf(available - reserved, 0.0)
+	var taken := minf(amount, available)
+	if taken <= 0.0:
+		return 0.0
+	_local_stock[key][resource_id] = float(_local_stock[key].get(resource_id, 0.0)) - taken
+	if _local_stock[key][resource_id] <= 0.0:
+		_local_stock[key].erase(resource_id)
+	_unreserve(anchor, resource_id, taken)
+	resources_changed.emit()
+	return taken
+
+
+func add_to_local(anchor: Vector2i, resource_id: String, amount: float) -> void:
+	if amount <= 0.0 or not is_transportable(resource_id):
+		return
+	var key := _anchor_key(anchor)
+	if not _local_stock.has(key):
+		_local_stock[key] = {}
+	var current := float(_local_stock[key].get(resource_id, 0.0))
+	_local_stock[key][resource_id] = minf(current + amount, LOCAL_STOCK_CAP)
+	resources_changed.emit()
+
+
+func is_transportable(resource_id: String) -> bool:
+	return resource_id not in ["strom", "essen", "wasser", "seitanpulver"]
+
+
+func release_job(job: Dictionary) -> void:
+	if job.is_empty():
+		return
+	_unreserve(job["from_anchor"], job["resource"], float(job["amount"]))
+
+
+func create_transport_jobs() -> Array:
+	var jobs: Array = []
+	var seen: Dictionary = {}
+
+	for dest_key in _buildings:
+		var dest_data: Dictionary = _buildings[dest_key]
+		var dest_anchor := _key_to_anchor(dest_key)
+		var building: Dictionary = BuildingCatalog.get_building(dest_data["building_index"])
+		if building.is_empty():
+			continue
+		var kind: String = building.get("kind", "")
+		if kind not in ["processor", "multi_recipe"]:
+			continue
+
+		for mode_id in dest_data["modes"]:
+			var recipe: Dictionary = BuildingCatalog.get_recipe(building, str(mode_id))
+			if recipe.is_empty():
+				continue
+			for resource_id in recipe.get("inputs", {}):
+				if not is_transportable(resource_id):
+					continue
+				var needed: float = float(recipe["inputs"][resource_id])
+				var have := get_local_amount(dest_anchor, resource_id)
+				if have >= needed:
+					continue
+
+				var source_anchor := _find_best_source(dest_anchor, resource_id)
+				if source_anchor == Vector2i(-999999, -999999):
+					continue
+
+				var pair_key := "%s>%s:%s" % [_anchor_key(source_anchor), dest_key, resource_id]
+				if seen.has(pair_key):
+					continue
+				seen[pair_key] = true
+
+				var source_available := _get_available_at(source_anchor, resource_id)
+				var carry := minf(CARRY_AMOUNT, needed - have)
+				carry = minf(carry, source_available)
+				if carry <= 0.0:
+					continue
+
+				_reserve(source_anchor, resource_id, carry)
+				jobs.append({
+					"from_anchor": source_anchor,
+					"to_anchor": dest_anchor,
+					"resource": resource_id,
+					"amount": carry,
+				})
+
+	return jobs
+
+
+func get_summary_lines(max_lines: int = 8) -> PackedStringArray:
+	var lines: PackedStringArray = []
+	lines.append("Tag %d  (%.0fs/Tag)" % [day_count, ResourceCatalog.SECONDS_PER_DAY])
+	var totals: Dictionary = stock.duplicate()
+	for key in _local_stock:
+		for resource_id in _local_stock[key]:
+			totals[resource_id] = float(totals.get(resource_id, 0.0)) + float(_local_stock[key][resource_id])
+
+	var keys: Array = totals.keys()
+	keys.sort()
+	var shown := 0
+	for resource_id in keys:
+		var amount: float = float(totals[resource_id])
+		if amount <= 0.0:
+			continue
+		lines.append("%s: %.0f" % [ResourceCatalog.get_resource_name(resource_id), amount])
+		shown += 1
+		if shown >= max_lines:
+			lines.append("...")
+			break
+	if _buildings.is_empty():
+		lines.append("Keine Produktionsgebäude")
+	return lines
+
+
 func _run_day() -> void:
 	day_count += 1
 	for key in _buildings:
 		var data: Dictionary = _buildings[key]
+		var anchor := _key_to_anchor(key)
 		var building: Dictionary = BuildingCatalog.get_building(data["building_index"])
 		if building.is_empty():
 			continue
 		if not _pay_upkeep(building):
 			continue
-		_run_building_production(building, data["modes"])
+		_run_building_production(anchor, building, data["modes"])
 	day_completed.emit(day_count)
 	resources_changed.emit()
 
@@ -119,53 +270,107 @@ func _pay_upkeep(building: Dictionary) -> bool:
 	return true
 
 
-func _run_building_production(building: Dictionary, modes: Array) -> void:
+func _run_building_production(anchor: Vector2i, building: Dictionary, modes: Array) -> void:
 	var kind: String = building.get("kind", "passive")
 	match kind:
 		"extractor":
-			add_resources(building.get("outputs_per_day", {}))
+			_add_local_outputs(anchor, building.get("outputs_per_day", {}))
 		"multi_extractor":
 			for mode_id in modes:
 				var mode: Dictionary = BuildingCatalog.get_mode(building, str(mode_id))
 				if not mode.is_empty():
-					add_resources(mode.get("outputs_per_day", {}))
-		"processor":
+					_add_local_outputs(anchor, mode.get("outputs_per_day", {}))
+		"processor", "multi_recipe":
 			for mode_id in modes:
 				var recipe: Dictionary = BuildingCatalog.get_recipe(building, str(mode_id))
 				if recipe.is_empty():
 					continue
-				if has_resources(recipe.get("inputs", {})):
-					spend_resources(recipe.get("inputs", {}))
-					add_resources(recipe.get("outputs", {}))
-		"multi_recipe":
-			for mode_id in modes:
-				var recipe: Dictionary = BuildingCatalog.get_recipe(building, str(mode_id))
-				if recipe.is_empty():
-					continue
-				if has_resources(recipe.get("inputs", {})):
-					spend_resources(recipe.get("inputs", {}))
-					add_resources(recipe.get("outputs", {}))
+				if _can_process_recipe(anchor, recipe):
+					_spend_recipe_inputs(anchor, recipe.get("inputs", {}))
+					_add_local_outputs(anchor, recipe.get("outputs", {}))
 
 
-func get_summary_lines(max_lines: int = 8) -> PackedStringArray:
-	var lines: PackedStringArray = []
-	lines.append("Tag %d  (%.0fs/Tag)" % [day_count, ResourceCatalog.SECONDS_PER_DAY])
-	var keys: Array = stock.keys()
-	keys.sort()
-	var shown := 0
-	for resource_id in keys:
-		var amount: float = get_amount(resource_id)
-		if amount <= 0.0:
+func _add_local_outputs(anchor: Vector2i, outputs: Dictionary) -> void:
+	for resource_id in outputs:
+		add_to_local(anchor, resource_id, float(outputs[resource_id]))
+
+
+func _can_process_recipe(anchor: Vector2i, recipe: Dictionary) -> bool:
+	for resource_id in recipe.get("inputs", {}):
+		var needed := float(recipe["inputs"][resource_id])
+		if is_transportable(resource_id):
+			if get_local_amount(anchor, resource_id) < needed:
+				return false
+		elif get_amount(resource_id) < needed:
+			return false
+	return true
+
+
+func _spend_recipe_inputs(anchor: Vector2i, inputs: Dictionary) -> void:
+	for resource_id in inputs:
+		var needed := float(inputs[resource_id])
+		if is_transportable(resource_id):
+			var key := _anchor_key(anchor)
+			_local_stock[key][resource_id] = get_local_amount(anchor, resource_id) - needed
+			if _local_stock[key][resource_id] <= 0.0:
+				_local_stock[key].erase(resource_id)
+		else:
+			stock[resource_id] = get_amount(resource_id) - needed
+
+
+func _find_best_source(dest_anchor: Vector2i, resource_id: String) -> Vector2i:
+	var best_anchor := Vector2i(-999999, -999999)
+	var best_amount := 0.0
+	for key in _buildings:
+		var source_anchor := _key_to_anchor(key)
+		if source_anchor == dest_anchor:
 			continue
-		lines.append("%s: %.0f" % [ResourceCatalog.get_resource_name(resource_id), amount])
-		shown += 1
-		if shown >= max_lines:
-			lines.append("...")
-			break
-	if _buildings.is_empty():
-		lines.append("Keine Produktionsgebäude")
-	return lines
+		var available := _get_available_at(source_anchor, resource_id)
+		if available > best_amount:
+			best_amount = available
+			best_anchor = source_anchor
+	return best_anchor
+
+
+func _get_available_at(anchor: Vector2i, resource_id: String) -> float:
+	return maxf(get_local_amount(anchor, resource_id) - _get_reserved(anchor, resource_id), 0.0)
+
+
+func _reserve(anchor: Vector2i, resource_id: String, amount: float) -> void:
+	var key := "%s:%s" % [_anchor_key(anchor), resource_id]
+	_reserved[key] = float(_reserved.get(key, 0.0)) + amount
+
+
+func _unreserve(anchor: Vector2i, resource_id: String, amount: float) -> void:
+	var key := "%s:%s" % [_anchor_key(anchor), resource_id]
+	if not _reserved.has(key):
+		return
+	_reserved[key] = float(_reserved[key]) - amount
+	if _reserved[key] <= 0.0:
+		_reserved.erase(key)
+
+
+func _get_reserved(anchor: Vector2i, resource_id: String) -> float:
+	var key := "%s:%s" % [_anchor_key(anchor), resource_id]
+	return float(_reserved.get(key, 0.0))
+
+
+func _clear_reservations_for_anchor(anchor: Vector2i) -> void:
+	var prefix := _anchor_key(anchor) + ":"
+	var to_erase: Array = []
+	for key in _reserved:
+		if str(key).begins_with(prefix):
+			to_erase.append(key)
+	for key in to_erase:
+		_reserved.erase(key)
 
 
 func _anchor_key(anchor: Vector2i) -> String:
 	return "%d,%d" % [anchor.x, anchor.y]
+
+
+func _key_to_anchor(key: String) -> Vector2i:
+	var parts := key.split(",")
+	if parts.size() != 2:
+		return Vector2i.ZERO
+	return Vector2i(int(parts[0]), int(parts[1]))
