@@ -33,6 +33,7 @@ var _grid: GridManager
 var _anim: AnimatedSprite2D
 var _label: Label
 var _warned_anims: Dictionary = {}
+var _current_walk_anim: StringName = &""
 
 
 func _ready() -> void:
@@ -135,16 +136,18 @@ func _walk_path(delta: float) -> bool:
 
 	var target: Vector2 = _path_waypoints[_waypoint_index]
 	var offset := target - global_position
+	var move_dist := walk_speed * delta
 
-	if offset.length() <= ARRIVE_DISTANCE:
+	if offset.length() <= maxf(move_dist, ARRIVE_DISTANCE):
 		global_position = target
 		_waypoint_index += 1
 		if _waypoint_index >= _path_waypoints.size():
+			_current_walk_anim = &""
 			_play_idle()
 			return true
 		return false
 
-	global_position += offset.normalized() * walk_speed * delta
+	global_position += offset.normalized() * move_dist
 	_update_walk_animation(offset, _get_step_anim_suffix())
 	return false
 
@@ -181,25 +184,30 @@ func _update_walk_animation(offset: Vector2, iso_suffix: StringName) -> void:
 		anim = walk_anim
 
 	var dir_anim := StringName("%s_%s" % [anim, iso_suffix])
-	if debug_walk_anim:
+	if debug_walk_anim and _anim.animation != dir_anim:
 		print("Citizen spielt: %s" % dir_anim)
 	if _has_animation(dir_anim):
-		_anim.play(dir_anim)
-		_anim.flip_h = false
+		_play_walk_anim(dir_anim)
 		return
 
 	# Fallback: exakter Name ohne Prefix (z. B. nur "walk_northeast")
 	if _has_animation(iso_suffix):
-		_anim.play(iso_suffix)
-		_anim.flip_h = false
+		_play_walk_anim(iso_suffix)
 		return
 
 	if _has_animation(anim):
 		if not _warned_anims.has(dir_anim):
 			_warned_anims[dir_anim] = true
 			push_warning("Citizen: '%s' fehlt, Fallback auf '%s'" % [dir_anim, anim])
-		_anim.play(anim)
-		_anim.flip_h = false
+		_play_walk_anim(anim)
+
+
+func _play_walk_anim(anim_name: StringName) -> void:
+	if _anim.animation == anim_name and _anim.is_playing():
+		return
+	_current_walk_anim = anim_name
+	_anim.play(anim_name)
+	_anim.flip_h = false
 
 
 func _has_animation(anim_name: StringName) -> bool:
@@ -211,7 +219,9 @@ func _play_idle() -> void:
 		return
 
 	if _has_animation(idle_anim):
-		_anim.play(idle_anim)
+		_current_walk_anim = &""
+		if _anim.animation != idle_anim:
+			_anim.play(idle_anim)
 		return
 
 	var names: PackedStringArray = _anim.sprite_frames.get_animation_names()
@@ -261,6 +271,7 @@ func _reset_idle() -> void:
 	_path_waypoints.clear()
 	_path_tiles.clear()
 	_waypoint_index = 0
+	_current_walk_anim = &""
 	_update_label()
 	_play_idle()
 
