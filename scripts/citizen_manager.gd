@@ -2,7 +2,8 @@ extends Node2D
 ## Spawnt Bürger und weist Transport-Aufträge zu.
 
 
-@export var grid_manager_path: NodePath = NodePath("../GridManager")
+@export var grid_manager_path: NodePath = NodePath("../../GridManager")
+@export var citizen_scene: PackedScene = preload("res://scenes/citizen.tscn")
 @export var citizen_count: int = 6
 @export var job_scan_interval: float = 1.0
 
@@ -25,8 +26,7 @@ func _process(delta: float) -> void:
 
 func _spawn_citizens() -> void:
 	for i in citizen_count:
-		var citizen := Node2D.new()
-		citizen.set_script(load("res://scripts/citizen.gd"))
+		var citizen: Node2D = citizen_scene.instantiate()
 		citizen.name = "Citizen_%d" % i
 		if _grid:
 			citizen.global_position = _grid.tile_to_world(Vector2i(i * 2, 0))

@@ -5,30 +5,21 @@ extends Node2D
 const ARRIVE_DISTANCE: float = 12.0
 
 @export var walk_speed: float = 90.0
+@export var idle_anim: StringName = &"idle"
+@export var walk_anim: StringName = &"walk"
+@export var carry_anim: StringName = &"carry_walk"
 
 var _job: Dictionary = {}
 var _state: String = "idle"
 var _carry_resource: String = ""
 var _carry_amount: float = 0.0
 
-var _sprite: ColorRect
-var _label: Label
+@onready var _anim: AnimatedSprite2D = $AnimatedSprite2D
+@onready var _label: Label = $Label
 
 
 func _ready() -> void:
-	y_sort_enabled = true
-	z_index = 50
-
-	_sprite = ColorRect.new()
-	_sprite.size = Vector2(10, 14)
-	_sprite.position = Vector2(-5, -14)
-	_sprite.color = Color(0.2, 0.75, 1.0)
-	add_child(_sprite)
-
-	_label = Label.new()
-	_label.position = Vector2(-6, -28)
-	_label.add_theme_font_size_override("font_size", 10)
-	add_child(_label)
+	_play_idle()
 
 
 func is_idle() -> bool:
@@ -59,9 +50,47 @@ func _walk_toward(target: Vector2, delta: float) -> bool:
 	var offset := target - global_position
 	if offset.length() <= ARRIVE_DISTANCE:
 		global_position = target
+		_play_idle()
 		return true
+
 	global_position += offset.normalized() * walk_speed * delta
+	_update_walk_animation(offset)
 	return false
+
+
+func _update_walk_animation(offset: Vector2) -> void:
+	if not _anim or not _anim.sprite_frames:
+		return
+
+	var anim := carry_anim if _carry_amount > 0.0 else walk_anim
+	if not _has_animation(anim):
+		anim = walk_anim
+
+	# Richtungs-Animationen: walk_south, walk_north, walk_east, walk_west
+	var dir_anim := _direction_anim_name(anim, offset)
+	if _has_animation(dir_anim):
+		_anim.play(dir_anim)
+	elif _has_animation(anim):
+		_anim.play(anim)
+		_anim.flip_h = offset.x < 0.0
+
+
+func _direction_anim_name(base: StringName, offset: Vector2) -> StringName:
+	var suffix := "south"
+	if absf(offset.x) > absf(offset.y):
+		suffix = "east" if offset.x > 0.0 else "west"
+	else:
+		suffix = "south" if offset.y > 0.0 else "north"
+	return StringName("%s_%s" % [base, suffix])
+
+
+func _has_animation(anim_name: StringName) -> bool:
+	return _anim.sprite_frames != null and _anim.sprite_frames.has_animation(anim_name)
+
+
+func _play_idle() -> void:
+	if _anim and _anim.sprite_frames and _has_animation(idle_anim):
+		_anim.play(idle_anim)
 
 
 func _pickup() -> void:
@@ -96,9 +125,12 @@ func _reset_idle() -> void:
 	_state = "idle"
 	_job = {}
 	_update_label()
+	_play_idle()
 
 
 func _update_label() -> void:
+	if not _label:
+		return
 	if _carry_resource.is_empty():
 		_label.text = ""
 	else:

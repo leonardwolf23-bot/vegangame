@@ -1,0 +1,17 @@
+[gd_scene load_steps=2 format=3 uid="uid://citizen_scene"]
+
+[ext_resource type="Script" path="res://scripts/citizen.gd" id="1_citizen"]
+
+[node name="Citizen" type="Node2D"]
+y_sort_enabled = true
+z_index = 50
+script = ExtResource("1_citizen")
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
+
+[node name="Label" type="Label" parent="."]
+offset_left = -6.0
+offset_top = -28.0
+offset_right = 20.0
+offset_bottom = -14.0
+theme_override_font_sizes/font_size = 10
