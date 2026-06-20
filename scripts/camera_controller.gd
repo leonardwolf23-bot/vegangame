@@ -1,6 +1,5 @@
 extends Camera2D
-## Einfache Kamera-Steuerung für den City Builder.
-## An deine bestehende Camera2D hängen.
+## Kamera: folgt dem Spieler oder manuelles Schwenken/Zoom.
 
 
 @export var pan_speed: float = 500.0
@@ -8,20 +7,27 @@ extends Camera2D
 @export var zoom_max: float = 2.0
 @export var zoom_step: float = 0.1
 @export var drag_pan_enabled: bool = true
+@export var follow_smoothing: float = 8.0
 
+var follow_target: Node2D
 var _is_dragging: bool = false
 var _drag_start: Vector2 = Vector2.ZERO
+var _manual_offset: Vector2 = Vector2.ZERO
+
+
+func set_follow_target(target: Node2D) -> void:
+	follow_target = target
+	_manual_offset = Vector2.ZERO
+	if follow_target:
+		global_position = follow_target.global_position
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	# Mausrad → Zoom rein/raus
 	if event is InputEventMouseButton:
 		if event.button_index == MOUSE_BUTTON_WHEEL_UP and event.pressed:
 			_apply_zoom(zoom_step)
 		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN and event.pressed:
 			_apply_zoom(-zoom_step)
-
-		# Mittlere Maustaste → Kamera ziehen
 		elif drag_pan_enabled and event.button_index == MOUSE_BUTTON_MIDDLE:
 			if event.pressed:
 				_is_dragging = true
@@ -33,13 +39,16 @@ func _unhandled_input(event: InputEvent) -> void:
 func _input(event: InputEvent) -> void:
 	if not _is_dragging or not event is InputEventMouseMotion:
 		return
-	# Kamera in entgegengesetzte Richtung der Mausbewegung schieben
-	position -= (event.position - _drag_start) / zoom
+	_manual_offset -= (event.position - _drag_start) / zoom
 	_drag_start = event.position
 
 
 func _process(delta: float) -> void:
-	# WASD + Pfeiltasten → Kamera bewegen (ohne Input Map nötig)
+	if follow_target and is_instance_valid(follow_target):
+		var target_pos := follow_target.global_position + _manual_offset
+		global_position = global_position.lerp(target_pos, follow_smoothing * delta)
+		return
+
 	var direction := Vector2.ZERO
 	if Input.is_physical_key_pressed(KEY_A) or Input.is_physical_key_pressed(KEY_LEFT):
 		direction.x -= 1.0

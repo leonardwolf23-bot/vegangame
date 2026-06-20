@@ -34,6 +34,17 @@ func can_walk_on(tile: Vector2i) -> bool:
 	return has_ground(tile)
 
 
+func can_player_walk_on(tile: Vector2i) -> bool:
+	if _cell_owner.has(tile):
+		return false
+	if has_ground(tile):
+		return true
+	# Ohne Boden-Tile: freie Fläche begehbar (Prototyp / leere Karte).
+	if building_layer and building_layer.get_cell_source_id(tile) != -1:
+		return false
+	return true
+
+
 func find_path(from: Vector2i, to: Vector2i) -> Array[Vector2i]:
 	if from == to:
 		return []

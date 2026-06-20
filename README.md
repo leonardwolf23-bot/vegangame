@@ -16,6 +16,7 @@ scripts/
 scenes/
   build_menu.tscn         # UI-Szene zum Einfügen
   main.tscn               # Beispiel-Szene (anpassen an dein Projekt)
+  player.tscn             # Spieler-Charakter (WASD)
 ```
 
 ## Einrichtung in deinem bestehenden Godot-Projekt
@@ -69,8 +70,8 @@ Das Menü liest die Gebäude aus `BuildingCatalog` und zeigt Buttons für **Hous
 
 | Aktion              | Taste / Input        |
 |---------------------|----------------------|
-| Kamera bewegen      | WASD                 |
-| Kamera ziehen       | Mittlere Maustaste   |
+| Spieler bewegen     | WASD / Pfeiltasten   |
+| Kamera              | Folgt dem Spieler (Mittlere Maustaste = leicht versetzen) |
 | Zoom                | Mausrad              |
 | Gebäude wählen      | Zifferntasten 1–9    |
 | Gebäude platzieren  | Linksklick           |
