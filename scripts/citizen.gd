@@ -32,6 +32,7 @@ var _waypoint_index: int = 0
 var _grid: GridManager
 var _anim: AnimatedSprite2D
 var _label: Label
+var _placeholder: Sprite2D
 var _warned_anims: Dictionary = {}
 var _current_walk_anim: StringName = &""
 
@@ -42,6 +43,7 @@ func _ready() -> void:
 
 	_anim = get_node_or_null(anim_node_path) as AnimatedSprite2D
 	_label = get_node_or_null(^"Label") as Label
+	_placeholder = get_node_or_null(^"Placeholder") as Sprite2D
 
 	if not _anim:
 		push_error("Citizen: AnimatedSprite2D nicht gefunden unter '%s'" % anim_node_path)
@@ -53,8 +55,11 @@ func _ready() -> void:
 	_anim.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 
 	if not _anim.sprite_frames:
-		push_warning("Citizen: Keine SpriteFrames! Weise sie am AnimatedSprite2D oder am Citizen-Node zu.")
+		push_warning("Citizen: Keine SpriteFrames! Blauer Platzhalter wird angezeigt.")
 		return
+
+	if _placeholder:
+		_placeholder.visible = false
 
 	_audit_walk_animations()
 	_play_idle()

@@ -1,12 +1,21 @@
-[gd_scene load_steps=2 format=3 uid="uid://citizen_scene"]
+[gd_scene load_steps=3 format=3 uid="uid://citizen_scene"]
 
 [ext_resource type="Script" path="res://scripts/citizen.gd" id="1_citizen"]
+
+[sub_resource type="PlaceholderTexture2D" id="PlaceholderTexture2D_citizen"]
+size = Vector2(10, 18)
 
 [node name="Citizen" type="Node2D"]
 y_sort_enabled = true
 script = ExtResource("1_citizen")
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
+texture_filter = 0
+
+[node name="Placeholder" type="Sprite2D" parent="."]
+modulate = Color(0.35, 0.55, 0.95, 1)
+position = Vector2(0, -8)
+texture = SubResource("PlaceholderTexture2D_citizen")
 
 [node name="Label" type="Label" parent="."]
 offset_left = -6.0
