@@ -26,6 +26,9 @@ const BUILDINGS: Array[Dictionary] = [
 		"footprint_offset": Vector2i(-1, -2),
 		"cost": 120,
 		"outputs_per_day": {"holz": 15.0},
+		"anim_idle": "idle",
+		"anim_working": "working",
+		"anim_work_duration": 3.0,
 	},
 	{
 		"id": "steinmetz",
@@ -269,3 +272,24 @@ func get_footprint_origin(anchor: Vector2i, building: Dictionary) -> Vector2i:
 
 func get_button_label(building: Dictionary) -> String:
 	return "%s  |  %d€" % [building.get("name", "Gebäude"), get_cost(building)]
+
+
+func supports_production_animation(building: Dictionary) -> bool:
+	var kind: String = building.get("kind", "")
+	return kind in ["extractor", "multi_extractor", "processor"]
+
+
+func get_sprite_frames(building: Dictionary) -> SpriteFrames:
+	return building.get("sprite_frames", null) as SpriteFrames
+
+
+func get_anim_idle(building: Dictionary) -> StringName:
+	return StringName(building.get("anim_idle", "idle"))
+
+
+func get_anim_working(building: Dictionary) -> StringName:
+	return StringName(building.get("anim_working", "working"))
+
+
+func get_anim_work_duration(building: Dictionary) -> float:
+	return float(building.get("anim_work_duration", 3.0))

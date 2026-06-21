@@ -4,6 +4,7 @@ extends Node
 
 signal resources_changed
 signal day_completed(day_number: int)
+signal building_produced(anchor: Vector2i)
 
 const CARRY_AMOUNT: float = 3.0
 const LOCAL_STOCK_CAP: float = 30.0
@@ -300,7 +301,8 @@ func _run_day() -> void:
 			continue
 		var upkeep_ok := _pay_upkeep(building)
 		var scale := 1.0 if upkeep_ok else 0.5
-		_run_building_production(anchor, building, data["modes"], scale)
+		if _run_building_production(anchor, building, data["modes"], scale):
+			building_produced.emit(anchor)
 	day_completed.emit(day_count)
 	resources_changed.emit()
 
@@ -314,19 +316,28 @@ func _pay_upkeep(building: Dictionary) -> bool:
 	return true
 
 
-func _run_building_production(anchor: Vector2i, building: Dictionary, modes: Array, scale: float = 1.0) -> void:
+func _run_building_production(anchor: Vector2i, building: Dictionary, modes: Array, scale: float = 1.0) -> bool:
 	var kind: String = building.get("kind", "passive")
+	var produced := false
 	match kind:
 		"extractor":
-			_add_local_outputs_scaled(anchor, building.get("outputs_per_day", {}), scale)
+			var outputs: Dictionary = building.get("outputs_per_day", {})
+			if not outputs.is_empty():
+				_add_local_outputs_scaled(anchor, outputs, scale)
+				produced = true
 		"multi_extractor":
 			for mode_id in modes:
 				var mode: Dictionary = BuildingCatalog.get_mode(building, str(mode_id))
-				if not mode.is_empty():
-					_add_local_outputs_scaled(anchor, mode.get("outputs_per_day", {}), scale)
+				if mode.is_empty():
+					continue
+				var outputs: Dictionary = mode.get("outputs_per_day", {})
+				if outputs.is_empty():
+					continue
+				_add_local_outputs_scaled(anchor, outputs, scale)
+				produced = true
 		"processor", "multi_recipe":
 			if scale < 1.0:
-				return
+				return false
 			for mode_id in modes:
 				var recipe: Dictionary = BuildingCatalog.get_recipe(building, str(mode_id))
 				if recipe.is_empty():
@@ -334,6 +345,8 @@ func _run_building_production(anchor: Vector2i, building: Dictionary, modes: Arr
 				if _can_process_recipe(anchor, recipe):
 					_spend_recipe_inputs(anchor, recipe.get("inputs", {}))
 					_add_local_outputs(anchor, recipe.get("outputs", {}))
+					produced = true
+	return produced
 
 
 func _add_local_outputs_scaled(anchor: Vector2i, outputs: Dictionary, scale: float) -> void:

@@ -76,6 +76,24 @@ Das Menü liest die Gebäude aus `BuildingCatalog` und zeigt Buttons für **Hous
 | Gebäude platzieren  | Linksklick           |
 | Gebäude entfernen   | Rechtsklick          |
 
+## Gebäude-Animation (nur bei Produktion)
+
+Produktionsgebäude können ein animiertes Overlay bekommen (`idle` / `working`).
+
+1. **SpriteFrames** anlegen: Animationen `idle` und `working` mit deinen Pixel-Frames
+2. In `building_catalog.gd` beim Gebäude eintragen:
+
+```gdscript
+"sprite_frames": preload("res://assets/buildings/holzfaeller.tres"),
+"anim_idle": "idle",
+"anim_working": "working",
+"anim_work_duration": 3.0,  # Sekunden nach jedem Produktions-Tick
+```
+
+3. Beim **Tages-Tick** (alle 30 s), wenn das Gebäude wirklich produziert, spielt es `working` und wechselt danach zurück zu `idle`.
+
+Das Tile auf dem `BuildingLayer` bleibt statisch — die Animation ist ein Overlay in `World/BuildingVisualManager`.
+
 ## Anpassbare Werte (Inspector)
 
 - **camera_controller.gd:** `pan_speed`, `zoom_min`, `zoom_max`

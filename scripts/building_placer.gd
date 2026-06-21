@@ -4,6 +4,7 @@ extends Node2D
 
 @export_group("Verknüpfungen")
 @export var grid_manager_path: NodePath = NodePath("../GridManager")
+@export var visual_manager_path: NodePath = NodePath("../World/BuildingVisualManager")
 
 @export_group("Spiel")
 @export var selected_building_index: int = 0
@@ -13,12 +14,14 @@ extends Node2D
 @export var ghost_offset_tiles: Vector2 = Vector2(0, 0.5)
 
 var _grid: GridManager
+var _visual_manager: Node
 var _ghost: Sprite2D
 var _build_mode_active: bool = false
 
 
 func _ready() -> void:
 	_grid = get_node_or_null(grid_manager_path) as GridManager
+	_visual_manager = get_node_or_null(visual_manager_path)
 	if not _grid:
 		push_error("BuildingPlacer: GridManager nicht gefunden! Pfad: %s" % grid_manager_path)
 		return
@@ -133,12 +136,11 @@ func _place_building(origin: Vector2i) -> void:
 				layer.set_cell(cell, building["source_id"], building["atlas_coords"])
 
 	_grid.register_building(origin, building_index, building)
+	var world_pos := _get_building_center_world_pos(origin, building)
 	if not BuildingCatalog.is_housing(building):
-		var foot_origin := BuildingCatalog.get_footprint_origin(origin, building)
-		var footprint := BuildingCatalog.get_footprint(building)
-		var center_tile := foot_origin + Vector2i(footprint.x / 2, footprint.y / 2)
-		var world_pos := _grid.tile_to_world(center_tile)
 		ProductionManager.register_building(origin, building_index, world_pos)
+	if _visual_manager and _visual_manager.has_method("spawn"):
+		_visual_manager.spawn(origin, building_index, world_pos)
 
 	if BuildingCatalog.is_housing(building):
 		GameState.register_housing(BuildingCatalog.get_income(building))
@@ -150,6 +152,8 @@ func _sell_building(tile: Vector2i) -> void:
 		return
 
 	var anchor: Vector2i = data.get("anchor", Vector2i.ZERO)
+	if _visual_manager and _visual_manager.has_method("remove"):
+		_visual_manager.remove(anchor)
 	ProductionManager.unregister_building(anchor)
 
 	var building_index: int = int(data.get("building_index", -1))
@@ -161,6 +165,13 @@ func _sell_building(tile: Vector2i) -> void:
 	var refund: int = int(cost * sell_refund_factor)
 	if refund > 0:
 		GameState.add_money(refund)
+
+
+func _get_building_center_world_pos(origin: Vector2i, building: Dictionary) -> Vector2:
+	var foot_origin := BuildingCatalog.get_footprint_origin(origin, building)
+	var footprint := BuildingCatalog.get_footprint(building)
+	var center_tile := foot_origin + Vector2i(footprint.x / 2, footprint.y / 2)
+	return _grid.tile_to_world(center_tile)
 
 
 func _get_ghost_offset() -> Vector2:
