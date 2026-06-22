@@ -69,8 +69,8 @@ Das Menü liest die Gebäude aus `BuildingCatalog` und zeigt Buttons für **Hous
 
 | Aktion              | Taste / Input        |
 |---------------------|----------------------|
-| Kamera bewegen      | WASD                 |
-| Kamera ziehen       | Mittlere Maustaste   |
+| Spieler bewegen     | WASD / Pfeiltasten (ein Tile pro Tastendruck) |
+| Kamera              | Folgt dem Spieler (Mittlere Maustaste = leicht versetzen) |
 | Zoom                | Mausrad              |
 | Gebäude wählen      | Zifferntasten 1–9    |
 | Gebäude platzieren  | Linksklick           |
