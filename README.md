@@ -94,3 +94,14 @@ Jedes Gebäude kostet zusätzlich **5 Holz** und **5 Stein** (aus dem Lager).
 - **camera_controller.gd:** `pan_speed`, `zoom_min`, `zoom_max`
 - **building_placer.gd:** `selected_building_index` (Start-Gebäude)
 - **grid_manager.gd:** `ground_layer`, `building_layer` (werden von main.gd gesetzt)
+
+## Vitamin-D-Warnung (Audio)
+
+1. Audiodatei nach `audio/vitamin_d_mangel.ogg` legen (OGG, WAV oder MP3)
+2. Godot importiert die Datei automatisch
+3. Sound spielt ab, wenn die Bevölkerung **Vitamin-D-Mangel** hat
+
+**Vitamin D** kommt aus angereicherten Produkten: Hafermilch, Sojamilch, Sojajoghurt, Frühstück (Café-Kette).  
+Bedarf: 2 Einheiten pro Einwohner. Status steht im HUD unter den Ressourcen.
+
+Pfad ändern: **Project → Project Settings → Autoload → PopulationHealth → `warning_audio_path`**

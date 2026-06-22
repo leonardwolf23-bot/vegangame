@@ -34,6 +34,8 @@ func _ready() -> void:
 
 	GameState.money_changed.connect(_refresh_hud)
 	GameState.income_changed.connect(_refresh_hud)
+	GameState.population_changed.connect(_refresh_hud)
+	PopulationHealth.vitamin_d_deficiency_changed.connect(_refresh_hud)
 	ProductionManager.resources_changed.connect(_refresh_hud)
 	ProductionManager.day_completed.connect(_refresh_hud)
 
@@ -129,9 +131,14 @@ func _refresh_hud(_arg = null) -> void:
 	if money_label:
 		money_label.text = "Geld: %d €" % GameState.money
 	if income_label:
-		income_label.text = "Wohn-Einkommen: +%d €/s" % int(GameState.get_income_per_second())
+		income_label.text = "Wohn-Einkommen: +%d €/s  |  Bevölkerung: %d" % [
+			int(GameState.get_income_per_second()),
+			GameState.population,
+		]
 	if resources_label:
-		resources_label.text = "\n".join(ProductionManager.get_summary_lines(10))
+		var lines := ProductionManager.get_summary_lines(9)
+		lines.insert(1, PopulationHealth.get_status_line())
+		resources_label.text = "\n".join(lines)
 	_refresh_building_buttons()
 
 
