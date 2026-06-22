@@ -118,7 +118,7 @@ func _build_path_to(target_world: Vector2) -> void:
 
 	var from_tile := _grid.world_to_tile(global_position)
 	if _grid.can_walk_on(from_tile):
-		global_position = _grid.tile_to_world(from_tile)
+		global_position = _grid.tile_to_walk_world(from_tile)
 		_path_from_tile = from_tile
 	else:
 		_path_from_tile = from_tile
