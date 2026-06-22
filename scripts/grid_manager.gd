@@ -4,6 +4,8 @@ extends Node
 
 @export var ground_layer: TileMapLayer
 @export var building_layer: TileMapLayer
+## Fußpunkt auf dem Iso-Tile (0.5 Y = Mitte des Rauten-Tiles, wie beim Bau-Ghost).
+@export var walk_offset_tiles: Vector2 = Vector2(0, 0.5)
 
 var _placed: Dictionary = {}
 var _cell_owner: Dictionary = {}
@@ -19,8 +21,18 @@ const _CARDINAL_DIRS: Array[Vector2i] = [
 func world_to_tile(world_pos: Vector2) -> Vector2i:
 	if not building_layer:
 		return Vector2i(-9999, -9999)
-	var local_pos := building_layer.to_local(world_pos)
-	return building_layer.local_to_map(local_pos)
+	var rough := building_layer.local_to_map(building_layer.to_local(world_pos))
+	# Iso-Klick trifft oft das Tile darunter — nächstes Tile am Fußpunkt wählen.
+	var best := rough
+	var best_dist := INF
+	for dx in range(-1, 2):
+		for dy in range(-1, 2):
+			var candidate := rough + Vector2i(dx, dy)
+			var dist := world_pos.distance_squared_to(tile_to_walk_world(candidate))
+			if dist < best_dist:
+				best_dist = dist
+				best = candidate
+	return best
 
 
 func tile_to_world(tile: Vector2i) -> Vector2:
@@ -28,6 +40,24 @@ func tile_to_world(tile: Vector2i) -> Vector2:
 		return Vector2.ZERO
 	var local_pos := building_layer.map_to_local(tile)
 	return building_layer.to_global(local_pos)
+
+
+func tile_to_walk_world(tile: Vector2i) -> Vector2:
+	return tile_to_world(tile) + _tile_offset_to_world(walk_offset_tiles)
+
+
+func _tile_offset_to_world(offset_tiles: Vector2) -> Vector2:
+	if not building_layer:
+		return Vector2.ZERO
+	var layer := building_layer
+	var full := Vector2i(int(floor(offset_tiles.x)), int(floor(offset_tiles.y)))
+	var frac := offset_tiles - Vector2(full)
+	var offset := layer.map_to_local(full) - layer.map_to_local(Vector2i.ZERO)
+	if frac != Vector2.ZERO:
+		var step_x := layer.map_to_local(Vector2i(1, 0)) - layer.map_to_local(Vector2i.ZERO)
+		var step_y := layer.map_to_local(Vector2i(0, 1)) - layer.map_to_local(Vector2i.ZERO)
+		offset += step_x * frac.x + step_y * frac.y
+	return offset
 
 
 func can_walk_on(tile: Vector2i) -> bool:

@@ -10,6 +10,8 @@ const ARRIVE_DISTANCE: float = 2.0
 @export var anim_node_path: NodePath = ^"AnimatedSprite2D"
 @export var idle_anim: StringName = &"idle"
 @export var walk_anim: StringName = &"walk"
+## Nur Optik — verschiebt Sprite/Label, nicht die Grid-Logik.
+@export var visual_offset: Vector2 = Vector2(0, -10)
 
 var _grid: GridManager
 var _placer: Node2D
@@ -26,6 +28,7 @@ func _ready() -> void:
 	_grid = get_node_or_null(grid_manager_path) as GridManager
 	_placer = get_node_or_null(building_placer_path) as Node2D
 	_anim = get_node_or_null(anim_node_path) as AnimatedSprite2D
+	_apply_visual_offset()
 	if _anim and _anim.sprite_frames:
 		_play_idle()
 	await get_tree().process_frame
@@ -75,7 +78,7 @@ func _move_to_world(world_pos: Vector2) -> void:
 
 	_path_tiles = _grid.find_player_path_to_near(_current_tile, to_tile)
 	for tile in _path_tiles:
-		_path_waypoints.append(_grid.tile_to_world(tile))
+		_path_waypoints.append(_grid.tile_to_walk_world(tile))
 
 	if _path_waypoints.is_empty():
 		_play_idle()
@@ -138,7 +141,7 @@ func _snap_to_nearest_tile() -> void:
 	var tile := _grid.world_to_tile(global_position)
 	if _grid.can_player_walk_on(tile):
 		_current_tile = tile
-		global_position = _grid.tile_to_world(tile)
+		global_position = _grid.tile_to_walk_world(tile)
 		return
 
 	for radius in range(1, 12):
@@ -149,7 +152,7 @@ func _snap_to_nearest_tile() -> void:
 				var candidate := tile + Vector2i(x, y)
 				if _grid.can_player_walk_on(candidate):
 					_current_tile = candidate
-					global_position = _grid.tile_to_world(candidate)
+					global_position = _grid.tile_to_walk_world(candidate)
 					return
 
 
@@ -173,6 +176,12 @@ func _update_walk_animation(move_offset: Vector2, iso_suffix: StringName) -> voi
 		if _current_walk_anim != walk_anim:
 			_current_walk_anim = walk_anim
 			_anim.play(walk_anim)
+
+
+func _apply_visual_offset() -> void:
+	for child in get_children():
+		if child is CanvasItem and child != self:
+			child.position = visual_offset
 
 
 func _play_idle() -> void:
