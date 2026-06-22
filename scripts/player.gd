@@ -11,7 +11,8 @@ const ARRIVE_DISTANCE: float = 2.0
 @export var idle_anim: StringName = &"idle"
 @export var walk_anim: StringName = &"walk"
 ## Nur Optik — verschiebt Sprite/Label, nicht die Grid-Logik.
-@export var visual_offset: Vector2 = Vector2(0, -10)
+@export var visual_offset: Vector2 = Vector2(-16, -16)
+@export var debug_clicks: bool = false
 
 var _grid: GridManager
 var _placer: Node2D
@@ -50,7 +51,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.button_index != MOUSE_BUTTON_LEFT:
 		return
 
-	_move_to_world(get_global_mouse_position())
+	_move_to_tile(_grid.world_to_tile_from_mouse())
 	get_viewport().set_input_as_handled()
 
 
@@ -65,10 +66,12 @@ func _is_build_mode_active() -> bool:
 	return _placer != null and _placer.has_method("is_build_mode_active") and _placer.is_build_mode_active()
 
 
-func _move_to_world(world_pos: Vector2) -> void:
-	var to_tile := _grid.world_to_tile(world_pos)
+func _move_to_tile(to_tile: Vector2i) -> void:
 	if to_tile == _current_tile and _path_waypoints.is_empty():
 		return
+
+	if debug_clicks:
+		print("Player Klick → Tile %s, Welt %s" % [to_tile, _grid.tile_to_walk_world(to_tile)])
 
 	_path_waypoints.clear()
 	_path_tiles.clear()

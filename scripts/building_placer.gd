@@ -10,7 +10,7 @@ extends Node2D
 @export_range(0.0, 1.0, 0.05) var sell_refund_factor: float = 0.5
 
 @export_group("Ghost-Vorschau")
-@export var ghost_offset_tiles: Vector2 = Vector2(0, 0.5)
+@export var ghost_offset_tiles: Vector2 = Vector2.ZERO
 
 var _grid: GridManager
 var _ghost: Sprite2D
@@ -78,7 +78,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _get_placement_tile() -> Vector2i:
-	return _grid.world_to_tile(get_global_mouse_position())
+	return _grid.world_to_tile_from_mouse()
 
 
 func _can_place_building(tile: Vector2i, building: Dictionary) -> bool:
@@ -100,7 +100,7 @@ func _update_ghost() -> void:
 	var tile: Vector2i = _get_placement_tile()
 	var can_place: bool = _can_place_building(tile, building)
 
-	_ghost.global_position = _grid.tile_to_world(tile) + _get_ghost_offset()
+	_ghost.global_position = _grid.tile_to_walk_world(tile) + _get_ghost_offset()
 	_ghost.visible = true
 	_ghost.modulate = Color(0.3, 1.0, 0.3, 0.5) if can_place else Color(1.0, 0.3, 0.3, 0.5)
 
