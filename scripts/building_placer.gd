@@ -36,6 +36,10 @@ func set_build_mode(active: bool) -> void:
 		_ghost.visible = false
 
 
+func is_build_mode_active() -> bool:
+	return _build_mode_active
+
+
 func _setup_ghost() -> void:
 	_ghost = Sprite2D.new()
 	_ghost.modulate = Color(1, 1, 1, 0.5)

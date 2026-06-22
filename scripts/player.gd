@@ -1,27 +1,30 @@
 extends Node2D
-## Spieler: tilebasierte Bewegung — ein Grid-Schritt pro Tastendruck.
+## Spieler: Point-and-Click auf dem isometrischen Tile-Grid.
 
 
 const ARRIVE_DISTANCE: float = 2.0
 
 @export var walk_speed: float = 120.0
 @export var grid_manager_path: NodePath = NodePath("../../GridManager")
+@export var building_placer_path: NodePath = NodePath("../../BuildingPlacer")
 @export var anim_node_path: NodePath = ^"AnimatedSprite2D"
 @export var idle_anim: StringName = &"idle"
 @export var walk_anim: StringName = &"walk"
 
 var _grid: GridManager
+var _placer: Node2D
 var _anim: AnimatedSprite2D
 var _current_tile: Vector2i = Vector2i.ZERO
-var _is_moving: bool = false
-var _move_target: Vector2 = Vector2.ZERO
-var _move_from_tile: Vector2i = Vector2i.ZERO
-var _move_to_tile: Vector2i = Vector2i.ZERO
+var _path_waypoints: Array[Vector2] = []
+var _path_tiles: Array[Vector2i] = []
+var _path_from_tile: Vector2i = Vector2i.ZERO
+var _waypoint_index: int = 0
 var _current_walk_anim: StringName = &""
 
 
 func _ready() -> void:
 	_grid = get_node_or_null(grid_manager_path) as GridManager
+	_placer = get_node_or_null(building_placer_path) as Node2D
 	_anim = get_node_or_null(anim_node_path) as AnimatedSprite2D
 	if _anim and _anim.sprite_frames:
 		_play_idle()
@@ -35,64 +38,97 @@ func set_grid_manager(grid: GridManager) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if _is_moving or not _grid:
+	if not _grid:
 		return
-	if not event is InputEventKey or not event.pressed or event.echo:
+	if _is_build_mode_active():
 		return
-
-	var dir := _key_to_tile_dir(event.physical_keycode)
-	if dir == Vector2i.ZERO:
+	if not event is InputEventMouseButton or not event.pressed:
 		return
-
-	var next_tile := _current_tile + dir
-	if not _grid.can_player_walk_on(next_tile):
+	if event.button_index != MOUSE_BUTTON_LEFT:
 		return
 
-	_start_move(next_tile)
+	_move_to_world(get_global_mouse_position())
+	get_viewport().set_input_as_handled()
 
 
 func _process(delta: float) -> void:
 	_update_draw_order()
-	if not _is_moving:
+	if _path_waypoints.is_empty():
+		return
+	_walk_path(delta)
+
+
+func _is_build_mode_active() -> bool:
+	return _placer != null and _placer.has_method("is_build_mode_active") and _placer.is_build_mode_active()
+
+
+func _move_to_world(world_pos: Vector2) -> void:
+	var to_tile := _grid.world_to_tile(world_pos)
+	if to_tile == _current_tile and _path_waypoints.is_empty():
 		return
 
-	var offset := _move_target - global_position
+	_path_waypoints.clear()
+	_path_tiles.clear()
+	_waypoint_index = 0
+	_current_walk_anim = &""
+	_path_from_tile = _current_tile
+
+	_path_tiles = _grid.find_player_path_to_near(_current_tile, to_tile)
+	for tile in _path_tiles:
+		_path_waypoints.append(_grid.tile_to_world(tile))
+
+	if _path_waypoints.is_empty():
+		_play_idle()
+
+
+func _walk_path(delta: float) -> void:
+	if _waypoint_index >= _path_waypoints.size():
+		_finish_path()
+		return
+
+	var target: Vector2 = _path_waypoints[_waypoint_index]
+	var offset := target - global_position
 	var move_dist := walk_speed * delta
 
 	if offset.length() <= maxf(move_dist, ARRIVE_DISTANCE):
-		global_position = _move_target
-		_current_tile = _move_to_tile
-		_is_moving = false
-		_current_walk_anim = &""
-		_play_idle()
+		global_position = target
+		_current_tile = _path_tiles[_waypoint_index]
+		_waypoint_index += 1
+		if _waypoint_index >= _path_waypoints.size():
+			_finish_path()
+			return
+		var next_offset := _path_waypoints[_waypoint_index] - global_position
+		_update_walk_animation(next_offset, _get_step_anim_suffix())
 		return
 
 	global_position += offset.normalized() * move_dist
-	_update_walk_animation(offset)
+	_update_walk_animation(offset, _get_step_anim_suffix())
 
 
-func _start_move(to_tile: Vector2i) -> void:
-	_move_from_tile = _current_tile
-	_move_to_tile = to_tile
-	_move_target = _grid.tile_to_world(to_tile)
-	_is_moving = true
-
-	var step_offset := _move_target - global_position
-	_update_walk_animation(step_offset)
+func _finish_path() -> void:
+	_path_waypoints.clear()
+	_path_tiles.clear()
+	_waypoint_index = 0
+	_current_walk_anim = &""
+	_play_idle()
 
 
-func _key_to_tile_dir(keycode: Key) -> Vector2i:
-	# Isometrisches Grid: W = nordost, S = südwest, A = nordwest, D = südost.
-	match keycode:
-		KEY_W, KEY_UP:
-			return Vector2i(0, -1)
-		KEY_S, KEY_DOWN:
-			return Vector2i(0, 1)
-		KEY_A, KEY_LEFT:
-			return Vector2i(-1, 0)
-		KEY_D, KEY_RIGHT:
-			return Vector2i(1, 0)
-	return Vector2i.ZERO
+func _get_step_anim_suffix() -> StringName:
+	if not _grid:
+		return &"southeast"
+	if _waypoint_index < _path_tiles.size():
+		var to_tile := _path_tiles[_waypoint_index]
+		var from_tile: Vector2i
+		if _waypoint_index == 0:
+			from_tile = _path_from_tile
+		else:
+			from_tile = _path_tiles[_waypoint_index - 1]
+		return _grid.get_walk_anim_suffix(from_tile, to_tile)
+	if _waypoint_index < _path_waypoints.size():
+		var move_offset := _path_waypoints[_waypoint_index] - global_position
+		if move_offset.length_squared() > 0.01:
+			return _grid.offset_to_walk_suffix(move_offset)
+	return &"southeast"
 
 
 func _snap_to_nearest_tile() -> void:
@@ -121,18 +157,14 @@ func _update_draw_order() -> void:
 	z_index = int(global_position.y)
 
 
-func _update_walk_animation(move_offset: Vector2) -> void:
+func _update_walk_animation(move_offset: Vector2, iso_suffix: StringName) -> void:
 	if not _anim or not _anim.sprite_frames:
 		return
 	if move_offset.length_squared() < 0.01:
 		_play_idle()
 		return
 
-	var suffix: StringName = &"southeast"
-	if _grid:
-		suffix = _grid.get_walk_anim_suffix(_move_from_tile, _move_to_tile)
-
-	var anim_name := StringName("%s_%s" % [walk_anim, suffix])
+	var anim_name := StringName("%s_%s" % [walk_anim, iso_suffix])
 	if _anim.sprite_frames.has_animation(anim_name):
 		if _current_walk_anim != anim_name:
 			_current_walk_anim = anim_name

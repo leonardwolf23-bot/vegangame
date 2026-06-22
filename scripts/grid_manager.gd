@@ -46,9 +46,17 @@ func can_player_walk_on(tile: Vector2i) -> bool:
 
 
 func find_path(from: Vector2i, to: Vector2i) -> Array[Vector2i]:
+	return _find_path(from, to, Callable(self, "can_walk_on"))
+
+
+func find_player_path(from: Vector2i, to: Vector2i) -> Array[Vector2i]:
+	return _find_path(from, to, Callable(self, "can_player_walk_on"))
+
+
+func _find_path(from: Vector2i, to: Vector2i, walkable: Callable) -> Array[Vector2i]:
 	if from == to:
 		return []
-	if not can_walk_on(from):
+	if not walkable.call(from):
 		return []
 
 	var queue: Array[Vector2i] = [from]
@@ -62,7 +70,7 @@ func find_path(from: Vector2i, to: Vector2i) -> Array[Vector2i]:
 			break
 		for dir in _CARDINAL_DIRS:
 			var next := current + dir
-			if not can_walk_on(next):
+			if not walkable.call(next):
 				continue
 			if came_from.has(next):
 				continue
@@ -76,16 +84,24 @@ func find_path(from: Vector2i, to: Vector2i) -> Array[Vector2i]:
 
 
 func find_path_to_near(from: Vector2i, to: Vector2i) -> Array[Vector2i]:
-	var path := find_path(from, to)
+	return _find_path_to_near(from, to, Callable(self, "can_walk_on"))
+
+
+func find_player_path_to_near(from: Vector2i, to: Vector2i) -> Array[Vector2i]:
+	return _find_path_to_near(from, to, Callable(self, "can_player_walk_on"))
+
+
+func _find_path_to_near(from: Vector2i, to: Vector2i, walkable: Callable) -> Array[Vector2i]:
+	var path := _find_path(from, to, walkable)
 	if not path.is_empty():
 		return path
 
 	var best_path: Array[Vector2i] = []
 	for dir in _CARDINAL_DIRS:
 		var alt := to + dir
-		if not can_walk_on(alt):
+		if not walkable.call(alt):
 			continue
-		path = find_path(from, alt)
+		path = _find_path(from, alt, walkable)
 		if path.is_empty():
 			continue
 		if best_path.is_empty() or path.size() < best_path.size():
