@@ -73,8 +73,21 @@ Das Menü liest die Gebäude aus `BuildingCatalog` und zeigt Buttons für **Hous
 | Kamera              | Folgt dem Spieler (Mittlere Maustaste = leicht versetzen) |
 | Zoom                | Mausrad              |
 | Gebäude wählen      | Zifferntasten 1–9    |
-| Gebäude platzieren  | Linksklick           |
+| Gebäude platzieren  | Linksklick (Bau-Menü) |
 | Gebäude entfernen   | Rechtsklick          |
+
+Jedes Gebäude kostet zusätzlich **5 Holz** und **5 Stein** (aus dem Lager).
+
+## Produktionsketten (Auszug)
+
+| Kette | Gebäude |
+|-------|---------|
+| Holz / Stein | Holzfäller → Steinmetz |
+| Getreide → Mehl → Brot | Bauernhof → Mühle → Bäckerei |
+| Soja → Milch / Tofu | Bauernhof → All Pro / Tofuhaus |
+| Weizen + Kichererbsen → Seitan | Bauernhof → Seitanwerk → Seitanmanufaktur → Streetfood |
+| Gemüse → Salat | Gewächshaus + Bauernhof → Salatbar |
+| Hafermilch + Brötchen | All Pro + Bäckerei → Café |
 
 ## Anpassbare Werte (Inspector)
 

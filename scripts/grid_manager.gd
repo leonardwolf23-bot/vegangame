@@ -260,6 +260,7 @@ func register_building(anchor: Vector2i, building_index: int, building: Dictiona
 		"foot_origin": foot_origin,
 		"building_index": building_index,
 		"cost": BuildingCatalog.get_cost(building),
+		"resource_costs": BuildingCatalog.get_resource_costs(building),
 		"income": BuildingCatalog.get_income(building),
 	}
 

@@ -84,7 +84,7 @@ func _get_placement_tile() -> Vector2i:
 func _can_place_building(tile: Vector2i, building: Dictionary) -> bool:
 	if not _grid.can_place_building(tile, building):
 		return false
-	return GameState.can_afford(BuildingCatalog.get_cost(building))
+	return BuildingCatalog.can_afford(building)
 
 
 func _update_ghost() -> void:
@@ -121,8 +121,7 @@ func _place_building(origin: Vector2i) -> void:
 	if not _can_place_building(origin, building):
 		return
 
-	var cost: int = BuildingCatalog.get_cost(building)
-	if not GameState.spend(cost):
+	if not BuildingCatalog.spend_build_cost(building):
 		return
 
 	var layer: TileMapLayer = _grid.building_layer
@@ -165,6 +164,12 @@ func _sell_building(tile: Vector2i) -> void:
 	var refund: int = int(cost * sell_refund_factor)
 	if refund > 0:
 		GameState.add_money(refund)
+
+	var resource_costs: Dictionary = data.get("resource_costs", {})
+	for resource_id in resource_costs:
+		var resource_refund := int(float(resource_costs[resource_id]) * sell_refund_factor)
+		if resource_refund > 0:
+			ProductionManager.add_resources({resource_id: float(resource_refund)})
 
 
 func _get_ghost_offset() -> Vector2:
