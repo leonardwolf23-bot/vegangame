@@ -139,4 +139,4 @@ func _refresh_building_buttons() -> void:
 	for i in _building_buttons.size():
 		var building: Dictionary = BuildingCatalog.get_building(i)
 		_building_buttons[i].text = BuildingCatalog.get_button_label(building)
-		_building_buttons[i].disabled = (i == _selected_index) or not GameState.can_afford(BuildingCatalog.get_cost(building))
+		_building_buttons[i].disabled = (i == _selected_index) or not BuildingCatalog.can_afford(building)

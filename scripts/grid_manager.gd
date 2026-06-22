@@ -4,6 +4,8 @@ extends Node
 
 @export var ground_layer: TileMapLayer
 @export var building_layer: TileMapLayer
+## Feinjustierung in Pixeln (map_to_local ist bereits Tile-Mitte).
+@export var walk_pixel_offset: Vector2 = Vector2.ZERO
 
 var _placed: Dictionary = {}
 var _cell_owner: Dictionary = {}
@@ -16,28 +18,111 @@ const _CARDINAL_DIRS: Array[Vector2i] = [
 ]
 
 
-func world_to_tile(world_pos: Vector2) -> Vector2i:
-	if not building_layer:
+func _coord_layer() -> TileMapLayer:
+	if ground_layer:
+		return ground_layer
+	return building_layer
+
+
+func world_to_tile_from_mouse() -> Vector2i:
+	var layer := _coord_layer()
+	if not layer:
 		return Vector2i(-9999, -9999)
-	var local_pos := building_layer.to_local(world_pos)
-	return building_layer.local_to_map(local_pos)
+	return _local_pos_to_tile(layer, layer.get_local_mouse_position())
+
+
+func world_to_tile(world_pos: Vector2) -> Vector2i:
+	var layer := _coord_layer()
+	if not layer:
+		return Vector2i(-9999, -9999)
+	return _local_pos_to_tile(layer, layer.to_local(world_pos))
 
 
 func tile_to_world(tile: Vector2i) -> Vector2:
-	if not building_layer:
+	var layer := _coord_layer()
+	if not layer:
 		return Vector2.ZERO
-	var local_pos := building_layer.map_to_local(tile)
-	return building_layer.to_global(local_pos)
+	var local_pos := layer.map_to_local(tile)
+	return layer.to_global(local_pos)
+
+
+func tile_to_walk_world(tile: Vector2i) -> Vector2:
+	return tile_to_world(tile) + walk_pixel_offset
+
+
+func _local_pos_to_tile(layer: TileMapLayer, local_pos: Vector2) -> Vector2i:
+	var rough := layer.local_to_map(local_pos)
+	if _local_pos_in_tile(layer, rough, local_pos):
+		return rough
+
+	var best := rough
+	var best_dist := INF
+	for dx in range(-1, 2):
+		for dy in range(-1, 2):
+			var candidate := rough + Vector2i(dx, dy)
+			if not _local_pos_in_tile(layer, candidate, local_pos):
+				continue
+			var dist := local_pos.distance_squared_to(layer.map_to_local(candidate))
+			if dist < best_dist:
+				best_dist = dist
+				best = candidate
+	if best_dist < INF:
+		return best
+
+	for dx in range(-1, 2):
+		for dy in range(-1, 2):
+			var candidate := rough + Vector2i(dx, dy)
+			var dist := local_pos.distance_squared_to(layer.map_to_local(candidate))
+			if dist < best_dist:
+				best_dist = dist
+				best = candidate
+	return best
+
+
+func _local_pos_in_tile(layer: TileMapLayer, tile: Vector2i, local_pos: Vector2) -> bool:
+	var center := layer.map_to_local(tile)
+	var rel := local_pos - center
+	var tile_size := _get_tile_size(layer)
+	var hw := float(tile_size.x) * 0.5
+	var hh := float(tile_size.y) * 0.5
+	if hw <= 0.0 or hh <= 0.0:
+		return false
+	return abs(rel.x) / hw + abs(rel.y) / hh <= 1.0
+
+
+func _get_tile_size(layer: TileMapLayer) -> Vector2i:
+	if layer.tile_set:
+		return layer.tile_set.tile_size
+	return Vector2i(64, 32)
 
 
 func can_walk_on(tile: Vector2i) -> bool:
 	return has_ground(tile)
 
 
+func can_player_walk_on(tile: Vector2i) -> bool:
+	if _cell_owner.has(tile):
+		return false
+	if has_ground(tile):
+		return true
+	# Ohne Boden-Tile: freie Fläche begehbar (Prototyp / leere Karte).
+	if building_layer and building_layer.get_cell_source_id(tile) != -1:
+		return false
+	return true
+
+
 func find_path(from: Vector2i, to: Vector2i) -> Array[Vector2i]:
+	return _find_path(from, to, Callable(self, "can_walk_on"))
+
+
+func find_player_path(from: Vector2i, to: Vector2i) -> Array[Vector2i]:
+	return _find_path(from, to, Callable(self, "can_player_walk_on"))
+
+
+func _find_path(from: Vector2i, to: Vector2i, walkable: Callable) -> Array[Vector2i]:
 	if from == to:
 		return []
-	if not can_walk_on(from):
+	if not walkable.call(from):
 		return []
 
 	var queue: Array[Vector2i] = [from]
@@ -51,7 +136,7 @@ func find_path(from: Vector2i, to: Vector2i) -> Array[Vector2i]:
 			break
 		for dir in _CARDINAL_DIRS:
 			var next := current + dir
-			if not can_walk_on(next):
+			if not walkable.call(next):
 				continue
 			if came_from.has(next):
 				continue
@@ -65,16 +150,24 @@ func find_path(from: Vector2i, to: Vector2i) -> Array[Vector2i]:
 
 
 func find_path_to_near(from: Vector2i, to: Vector2i) -> Array[Vector2i]:
-	var path := find_path(from, to)
+	return _find_path_to_near(from, to, Callable(self, "can_walk_on"))
+
+
+func find_player_path_to_near(from: Vector2i, to: Vector2i) -> Array[Vector2i]:
+	return _find_path_to_near(from, to, Callable(self, "can_player_walk_on"))
+
+
+func _find_path_to_near(from: Vector2i, to: Vector2i, walkable: Callable) -> Array[Vector2i]:
+	var path := _find_path(from, to, walkable)
 	if not path.is_empty():
 		return path
 
 	var best_path: Array[Vector2i] = []
 	for dir in _CARDINAL_DIRS:
 		var alt := to + dir
-		if not can_walk_on(alt):
+		if not walkable.call(alt):
 			continue
-		path = find_path(from, alt)
+		path = _find_path(from, alt, walkable)
 		if path.is_empty():
 			continue
 		if best_path.is_empty() or path.size() < best_path.size():
@@ -167,6 +260,7 @@ func register_building(anchor: Vector2i, building_index: int, building: Dictiona
 		"foot_origin": foot_origin,
 		"building_index": building_index,
 		"cost": BuildingCatalog.get_cost(building),
+		"resource_costs": BuildingCatalog.get_resource_costs(building),
 		"income": BuildingCatalog.get_income(building),
 	}
 
