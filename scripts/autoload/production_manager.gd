@@ -7,6 +7,9 @@ signal day_completed(day_number: int)
 
 const CARRY_AMOUNT: float = 3.0
 const LOCAL_STOCK_CAP: float = 30.0
+const INN_STOCK_CAP: float = 60.0
+const INN_TARGET_PER_FOOD: float = 6.0
+const FOOD_PER_CITIZEN_PER_DAY: float = 1.5
 
 var stock: Dictionary = {}
 var day_timer: float = 0.0
@@ -147,9 +150,15 @@ func get_total_amount(resource_id: String) -> float:
 
 func has_resources(costs: Dictionary) -> bool:
 	for resource_id in costs:
-		if get_amount(resource_id) < float(costs[resource_id]):
+		if _get_available_for_construction(resource_id) < float(costs[resource_id]):
 			return false
 	return true
+
+
+func _get_available_for_construction(resource_id: String) -> float:
+	if ResourceCatalog.is_building_material(resource_id):
+		return get_total_amount(resource_id)
+	return get_amount(resource_id)
 
 
 func add_resources(amounts: Dictionary) -> void:
@@ -162,9 +171,39 @@ func spend_resources(costs: Dictionary) -> bool:
 	if not has_resources(costs):
 		return false
 	for resource_id in costs:
-		stock[resource_id] = get_amount(resource_id) - float(costs[resource_id])
+		var amount := float(costs[resource_id])
+		if ResourceCatalog.is_building_material(resource_id):
+			if not _spend_building_material(resource_id, amount):
+				return false
+		else:
+			stock[resource_id] = get_amount(resource_id) - amount
 	resources_changed.emit()
 	return true
+
+
+func _spend_building_material(resource_id: String, amount: float) -> bool:
+	var remaining := amount
+	var from_global := minf(remaining, get_amount(resource_id))
+	if from_global > 0.0:
+		stock[resource_id] = get_amount(resource_id) - from_global
+		remaining -= from_global
+	if remaining <= 0.0:
+		return true
+	for key in _buildings:
+		if remaining <= 0.0:
+			break
+		var local_key := str(key)
+		if not _local_stock.has(local_key):
+			continue
+		var available := float(_local_stock[local_key].get(resource_id, 0.0))
+		if available <= 0.0:
+			continue
+		var taken := minf(available, remaining)
+		_local_stock[local_key][resource_id] = available - taken
+		if _local_stock[local_key][resource_id] <= 0.0:
+			_local_stock[local_key].erase(resource_id)
+		remaining -= taken
+	return remaining <= 0.0
 
 
 func take_from_local(anchor: Vector2i, resource_id: String, amount: float) -> float:
@@ -192,8 +231,41 @@ func add_to_local(anchor: Vector2i, resource_id: String, amount: float) -> void:
 	if not _local_stock.has(key):
 		_local_stock[key] = {}
 	var current := float(_local_stock[key].get(resource_id, 0.0))
-	_local_stock[key][resource_id] = minf(current + amount, LOCAL_STOCK_CAP)
+	var cap := _get_local_cap(anchor)
+	_local_stock[key][resource_id] = minf(current + amount, cap)
 	resources_changed.emit()
+
+
+func _get_local_cap(anchor: Vector2i) -> float:
+	var key := _anchor_key(anchor)
+	if not _buildings.has(key):
+		return LOCAL_STOCK_CAP
+	var building: Dictionary = BuildingCatalog.get_building(int(_buildings[key]["building_index"]))
+	if BuildingCatalog.is_inn(building):
+		return INN_STOCK_CAP
+	return LOCAL_STOCK_CAP
+
+
+func get_inn_food_supply() -> float:
+	var total := 0.0
+	for key in _buildings:
+		var building: Dictionary = BuildingCatalog.get_building(int(_buildings[key]["building_index"]))
+		if not BuildingCatalog.is_inn(building):
+			continue
+		var anchor := _key_to_anchor(key)
+		for resource_id in ResourceCatalog.get_edible_resource_ids():
+			var amount := get_local_amount(anchor, resource_id)
+			if amount > 0.0:
+				total += amount * ResourceCatalog.get_food_value(resource_id)
+	return total
+
+
+func has_inn() -> bool:
+	for key in _buildings:
+		var building: Dictionary = BuildingCatalog.get_building(int(_buildings[key]["building_index"]))
+		if BuildingCatalog.is_inn(building):
+			return true
+	return false
 
 
 func is_transportable(resource_id: String) -> bool:
@@ -207,6 +279,13 @@ func release_job(job: Dictionary) -> void:
 
 
 func create_transport_jobs() -> Array:
+	var jobs: Array = []
+	jobs.append_array(_create_processor_jobs())
+	jobs.append_array(_create_inn_delivery_jobs())
+	return jobs
+
+
+func _create_processor_jobs() -> Array:
 	var jobs: Array = []
 	var seen: Dictionary = {}
 
@@ -258,6 +337,50 @@ func create_transport_jobs() -> Array:
 	return jobs
 
 
+func _create_inn_delivery_jobs() -> Array:
+	var jobs: Array = []
+	var seen: Dictionary = {}
+
+	for dest_key in _buildings:
+		var dest_data: Dictionary = _buildings[dest_key]
+		var dest_anchor := _key_to_anchor(dest_key)
+		var building: Dictionary = BuildingCatalog.get_building(dest_data["building_index"])
+		if not BuildingCatalog.is_inn(building):
+			continue
+
+		for resource_id in ResourceCatalog.get_edible_resource_ids():
+			if not is_transportable(resource_id):
+				continue
+			var have := get_local_amount(dest_anchor, resource_id)
+			if have >= INN_TARGET_PER_FOOD:
+				continue
+
+			var source_anchor := _find_best_source(dest_anchor, resource_id)
+			if source_anchor == Vector2i(-999999, -999999):
+				continue
+
+			var pair_key := "inn:%s>%s:%s" % [_anchor_key(source_anchor), dest_key, resource_id]
+			if seen.has(pair_key):
+				continue
+			seen[pair_key] = true
+
+			var source_available := _get_available_at(source_anchor, resource_id)
+			var carry := minf(CARRY_AMOUNT, INN_TARGET_PER_FOOD - have)
+			carry = minf(carry, source_available)
+			if carry <= 0.0:
+				continue
+
+			_reserve(source_anchor, resource_id, carry)
+			jobs.append({
+				"from_anchor": source_anchor,
+				"to_anchor": dest_anchor,
+				"resource": resource_id,
+				"amount": carry,
+			})
+
+	return jobs
+
+
 func get_summary_lines(max_lines: int = 8) -> PackedStringArray:
 	var lines: PackedStringArray = []
 	lines.append("Tag %d  (%.0fs/Tag)" % [day_count, ResourceCatalog.SECONDS_PER_DAY])
@@ -300,7 +423,10 @@ func _run_day() -> void:
 			continue
 		var upkeep_ok := _pay_upkeep(building)
 		var scale := 1.0 if upkeep_ok else 0.5
-		_run_building_production(anchor, building, data["modes"], scale)
+		if BuildingCatalog.is_inn(building):
+			_run_inn_consumption(anchor)
+		else:
+			_run_building_production(anchor, building, data["modes"], scale)
 	day_completed.emit(day_count)
 	resources_changed.emit()
 
@@ -312,6 +438,35 @@ func _pay_upkeep(building: Dictionary) -> bool:
 	if not spend_resources(upkeep):
 		return false
 	return true
+
+
+func _run_inn_consumption(anchor: Vector2i) -> void:
+	var need := float(GameState.population) * FOOD_PER_CITIZEN_PER_DAY
+	if need <= 0.0:
+		return
+
+	var edible_ids: Array = ResourceCatalog.get_edible_resource_ids()
+	edible_ids.sort_custom(func(a, b): return ResourceCatalog.get_food_value(a) > ResourceCatalog.get_food_value(b))
+
+	var remaining := need
+	for resource_id in edible_ids:
+		if remaining <= 0.0:
+			break
+		var available := get_local_amount(anchor, resource_id)
+		if available <= 0.0:
+			continue
+		var food_value := ResourceCatalog.get_food_value(resource_id)
+		if food_value <= 0.0:
+			continue
+		var units_needed := remaining / food_value
+		var taken := minf(available, units_needed)
+		var key := _anchor_key(anchor)
+		_local_stock[key][resource_id] = available - taken
+		if _local_stock[key][resource_id] <= 0.0:
+			_local_stock[key].erase(resource_id)
+		remaining -= taken * food_value
+
+	resources_changed.emit()
 
 
 func _run_building_production(anchor: Vector2i, building: Dictionary, modes: Array, scale: float = 1.0) -> void:
@@ -338,12 +493,21 @@ func _run_building_production(anchor: Vector2i, building: Dictionary, modes: Arr
 
 func _add_local_outputs_scaled(anchor: Vector2i, outputs: Dictionary, scale: float) -> void:
 	for resource_id in outputs:
-		add_to_local(anchor, resource_id, float(outputs[resource_id]) * scale)
+		_deposit_output(anchor, resource_id, float(outputs[resource_id]) * scale)
 
 
 func _add_local_outputs(anchor: Vector2i, outputs: Dictionary) -> void:
 	for resource_id in outputs:
-		add_to_local(anchor, resource_id, float(outputs[resource_id]))
+		_deposit_output(anchor, resource_id, float(outputs[resource_id]))
+
+
+func _deposit_output(anchor: Vector2i, resource_id: String, amount: float) -> void:
+	if amount <= 0.0:
+		return
+	if ResourceCatalog.is_building_material(resource_id):
+		add_resources({resource_id: amount})
+	else:
+		add_to_local(anchor, resource_id, amount)
 
 
 func _bootstrap_production(anchor: Vector2i, building: Dictionary, modes: Array) -> void:
@@ -388,6 +552,9 @@ func _find_best_source(dest_anchor: Vector2i, resource_id: String) -> Vector2i:
 	for key in _buildings:
 		var source_anchor := _key_to_anchor(key)
 		if source_anchor == dest_anchor:
+			continue
+		var source_building: Dictionary = BuildingCatalog.get_building(int(_buildings[key]["building_index"]))
+		if BuildingCatalog.is_inn(source_building):
 			continue
 		var available := _get_available_at(source_anchor, resource_id)
 		if available > best_amount:
