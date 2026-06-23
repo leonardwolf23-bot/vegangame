@@ -68,6 +68,12 @@ func is_idle() -> bool:
 	return _state == "idle"
 
 
+func cancel_active_job() -> void:
+	if not _job.is_empty():
+		ProductionManager.release_job(_job)
+	_reset_idle()
+
+
 func assign_job(job: Dictionary) -> void:
 	var source_pos := ProductionManager.get_building_world_pos(job["from_anchor"])
 	var dest_pos := ProductionManager.get_building_world_pos(job["to_anchor"])

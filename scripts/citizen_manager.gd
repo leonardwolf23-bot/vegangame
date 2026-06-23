@@ -1,17 +1,17 @@
 extends Node
-## Spawnt Bürger und weist Transport-Aufträge zu.
+## Spawnt Bürger passend zur Bevölkerung und weist Transport-Aufträge zu.
 
 
 @export var grid_manager_path: NodePath = NodePath("../../GridManager")
 @export var citizens_parent_path: NodePath = NodePath("..")
 @export var citizen_scene: PackedScene = preload("res://scenes/citizen.tscn")
-@export var citizen_count: int = 6
 @export var job_scan_interval: float = 1.0
 
 var _citizens: Array[Node2D] = []
 var _scan_timer: float = 0.0
 var _grid: GridManager
 var _citizens_parent: Node2D
+var _next_spawn_index: int = 0
 
 
 func _ready() -> void:
@@ -34,8 +34,9 @@ func _startup() -> void:
 		push_warning("CitizenManager: Grid-Layer nicht bereit, Bürger evtl. falsch platziert.")
 	if _grid:
 		ProductionManager.bind_grid_manager(_grid)
-	_spawn_citizens()
-	_assign_jobs()
+	if not GameState.population_changed.is_connected(_sync_citizen_count):
+		GameState.population_changed.connect(_sync_citizen_count)
+	_sync_citizen_count(GameState.population)
 
 
 func _wait_for_grid_layers(max_frames: int = 30) -> bool:
@@ -55,22 +56,43 @@ func _process(delta: float) -> void:
 		_assign_jobs()
 
 
-func _spawn_citizens() -> void:
+func _sync_citizen_count(target_count: int) -> void:
+	while _citizens.size() < target_count:
+		_spawn_one_citizen()
+	while _citizens.size() > target_count:
+		_remove_one_citizen()
+	_assign_jobs()
+
+
+func _spawn_one_citizen() -> void:
 	if not _citizens_parent:
 		return
-	var parent: Node = _citizens_parent as Node
-	for i in citizen_count:
-		var citizen: Node2D = citizen_scene.instantiate()
-		citizen.name = "Citizen_%d" % i
-		parent.add_child(citizen)
-		if citizen.has_method("set_grid_manager") and _grid:
-			citizen.set_grid_manager(_grid)
-		if _grid and _grid.building_layer:
-			var spawn_tile := _pick_spawn_tile(i)
-			citizen.global_position = _grid.tile_to_world(spawn_tile)
-		else:
-			citizen.global_position = Vector2(100 + i * 20, 100)
-		_citizens.append(citizen)
+	var citizen: Node2D = citizen_scene.instantiate()
+	citizen.name = "Citizen_%d" % _next_spawn_index
+	_next_spawn_index += 1
+	_citizens_parent.add_child(citizen)
+	if citizen.has_method("set_grid_manager") and _grid:
+		citizen.set_grid_manager(_grid)
+	if _grid and _grid.building_layer:
+		var spawn_tile := _pick_spawn_tile(_citizens.size())
+		citizen.global_position = _grid.tile_to_walk_world(spawn_tile)
+	else:
+		citizen.global_position = Vector2(100 + _citizens.size() * 20, 100)
+	_citizens.append(citizen)
+
+
+func _remove_one_citizen() -> void:
+	if _citizens.is_empty():
+		return
+	var victim: Node2D = _citizens[0]
+	for citizen in _citizens:
+		if citizen.has_method("is_idle") and citizen.is_idle():
+			victim = citizen
+			break
+	if victim.has_method("cancel_active_job"):
+		victim.cancel_active_job()
+	_citizens.erase(victim)
+	victim.queue_free()
 
 
 func _pick_spawn_tile(index: int) -> Vector2i:
