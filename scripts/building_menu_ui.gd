@@ -144,17 +144,20 @@ func _refresh_hud(_arg = null) -> void:
 			int(GameState.get_income_per_second()),
 			GameState.population,
 		]
-	if resources_label:
-		var lines := ProductionManager.get_summary_lines(9)
-		var health := _population_health()
-		if health:
-			if health.has_method("get_status_lines"):
-				var status_lines: PackedStringArray = health.get_status_lines()
-				for i in status_lines.size():
-					lines.insert(1 + i, status_lines[i])
-			elif health.has_method("get_status_line"):
-				lines.insert(1, health.get_status_line())
-		resources_label.text = "\n".join(lines)
+	if not resources_label:
+		_refresh_building_buttons()
+		return
+
+	var lines := ProductionManager.get_summary_lines(9)
+	var health := _population_health()
+	if health:
+		if health.has_method("get_status_lines"):
+			var status_lines: PackedStringArray = health.get_status_lines()
+			for i in status_lines.size():
+				lines.insert(1 + i, status_lines[i])
+		elif health.has_method("get_status_line"):
+			lines.insert(1, health.get_status_line())
+	resources_label.text = "\n".join(lines)
 	_refresh_building_buttons()
 
 
