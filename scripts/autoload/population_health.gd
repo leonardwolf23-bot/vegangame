@@ -1,4 +1,5 @@
 extends Node
+class_name PopulationHealthService
 ## Autoload: Bevölkerungsgesundheit — Vitamin-D-Mangel erkennen + Warnsound.
 
 
