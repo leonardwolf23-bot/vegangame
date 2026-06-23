@@ -63,7 +63,7 @@ In `scripts/autoload/building_catalog.gd` die `BUILDINGS`-Liste bearbeiten:
 2. `scenes/build_menu.tscn` wählen
 3. Der UI-Node heißt `UI` und findet den BuildingPlacer automatisch (`../BuildingPlacer`)
 
-Das Menü liest die Gebäude aus `BuildingCatalog` und zeigt Buttons für **House** und **Ersatzmilchfabrik**.
+Das Menü liest die Gebäude aus `BuildingCatalog` — u. a. **Haus**, **Gasthaus** (inn), Holzfäller, Bäckerei, Seitanmanufaktur.
 
 ## Steuerung
 

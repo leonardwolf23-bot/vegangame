@@ -18,6 +18,18 @@ const BUILDINGS: Array[Dictionary] = [
 		"income": 5,
 	},
 	{
+		"id": "inn",
+		"name": "Gasthaus",
+		"kind": "inn",
+		"description": "Zentrale Essensversorgung — Bürger liefern fertiges Essen aus Bäckerei, Seitanfabrik usw.",
+		"source_id": 17,
+		"atlas_coords": Vector2i(0, 0),
+		"size": Vector2i(1, 1),
+		"footprint": Vector2i(3, 3),
+		"footprint_offset": Vector2i(-1, -2),
+		"cost": 280,
+	},
+	{
 		"id": "holzfaeller",
 		"name": "Holzfäller",
 		"kind": "extractor",
