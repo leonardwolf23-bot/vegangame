@@ -7,6 +7,8 @@ const UPKEEP_STROM: float = 1.0
 const UPKEEP_ESSEN: float = 0.5
 const UPKEEP_WASSER: float = 3.0
 
+const BUILDING_MATERIALS: Array[String] = ["holz", "stein"]
+
 const DISPLAY_NAMES: Dictionary = {
 	"strom": "Strom (kWh)",
 	"essen": "Essen (kg)",
@@ -73,6 +75,10 @@ func is_edible(resource_id: String) -> bool:
 	return EDIBLE_FOODS.has(resource_id)
 
 
+func is_building_material(resource_id: String) -> bool:
+	return resource_id in BUILDING_MATERIALS
+
+
 func get_food_value(resource_id: String) -> float:
 	return float(EDIBLE_FOODS.get(resource_id, 0.0))
 
@@ -90,6 +96,6 @@ func get_start_stock() -> Dictionary:
 		"strom": 200.0,
 		"essen": 80.0,
 		"wasser": 400.0,
-		"holz": 30.0,
-		"stein": 30.0,
+		"holz": 40.0,
+		"stein": 40.0,
 	}

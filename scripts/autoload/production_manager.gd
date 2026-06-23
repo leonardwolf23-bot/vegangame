@@ -150,9 +150,15 @@ func get_total_amount(resource_id: String) -> float:
 
 func has_resources(costs: Dictionary) -> bool:
 	for resource_id in costs:
-		if get_amount(resource_id) < float(costs[resource_id]):
+		if _get_available_for_construction(resource_id) < float(costs[resource_id]):
 			return false
 	return true
+
+
+func _get_available_for_construction(resource_id: String) -> float:
+	if ResourceCatalog.is_building_material(resource_id):
+		return get_total_amount(resource_id)
+	return get_amount(resource_id)
 
 
 func add_resources(amounts: Dictionary) -> void:
@@ -165,9 +171,39 @@ func spend_resources(costs: Dictionary) -> bool:
 	if not has_resources(costs):
 		return false
 	for resource_id in costs:
-		stock[resource_id] = get_amount(resource_id) - float(costs[resource_id])
+		var amount := float(costs[resource_id])
+		if ResourceCatalog.is_building_material(resource_id):
+			if not _spend_building_material(resource_id, amount):
+				return false
+		else:
+			stock[resource_id] = get_amount(resource_id) - amount
 	resources_changed.emit()
 	return true
+
+
+func _spend_building_material(resource_id: String, amount: float) -> bool:
+	var remaining := amount
+	var from_global := minf(remaining, get_amount(resource_id))
+	if from_global > 0.0:
+		stock[resource_id] = get_amount(resource_id) - from_global
+		remaining -= from_global
+	if remaining <= 0.0:
+		return true
+	for key in _buildings:
+		if remaining <= 0.0:
+			break
+		var local_key := str(key)
+		if not _local_stock.has(local_key):
+			continue
+		var available := float(_local_stock[local_key].get(resource_id, 0.0))
+		if available <= 0.0:
+			continue
+		var taken := minf(available, remaining)
+		_local_stock[local_key][resource_id] = available - taken
+		if _local_stock[local_key][resource_id] <= 0.0:
+			_local_stock[local_key].erase(resource_id)
+		remaining -= taken
+	return remaining <= 0.0
 
 
 func take_from_local(anchor: Vector2i, resource_id: String, amount: float) -> float:
@@ -457,12 +493,21 @@ func _run_building_production(anchor: Vector2i, building: Dictionary, modes: Arr
 
 func _add_local_outputs_scaled(anchor: Vector2i, outputs: Dictionary, scale: float) -> void:
 	for resource_id in outputs:
-		add_to_local(anchor, resource_id, float(outputs[resource_id]) * scale)
+		_deposit_output(anchor, resource_id, float(outputs[resource_id]) * scale)
 
 
 func _add_local_outputs(anchor: Vector2i, outputs: Dictionary) -> void:
 	for resource_id in outputs:
-		add_to_local(anchor, resource_id, float(outputs[resource_id]))
+		_deposit_output(anchor, resource_id, float(outputs[resource_id]))
+
+
+func _deposit_output(anchor: Vector2i, resource_id: String, amount: float) -> void:
+	if amount <= 0.0:
+		return
+	if ResourceCatalog.is_building_material(resource_id):
+		add_resources({resource_id: amount})
+	else:
+		add_to_local(anchor, resource_id, amount)
 
 
 func _bootstrap_production(anchor: Vector2i, building: Dictionary, modes: Array) -> void:
