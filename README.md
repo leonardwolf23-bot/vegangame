@@ -69,15 +69,43 @@ Das Menü liest die Gebäude aus `BuildingCatalog` und zeigt Buttons für **Hous
 
 | Aktion              | Taste / Input        |
 |---------------------|----------------------|
-| Kamera bewegen      | WASD                 |
-| Kamera ziehen       | Mittlere Maustaste   |
+| Spieler bewegen     | Linksklick (tilebasiert, außerhalb des Bau-Menüs) |
+| Kamera              | Folgt dem Spieler (Mittlere Maustaste = leicht versetzen) |
 | Zoom                | Mausrad              |
 | Gebäude wählen      | Zifferntasten 1–9    |
-| Gebäude platzieren  | Linksklick           |
+| Gebäude platzieren  | Linksklick (Bau-Menü) |
 | Gebäude entfernen   | Rechtsklick          |
+
+Jedes Gebäude kostet zusätzlich **5 Holz** und **5 Stein** (aus dem Lager).
+
+## Produktionsketten (Auszug)
+
+| Kette | Gebäude |
+|-------|---------|
+| Holz / Stein | Holzfäller → Steinmetz |
+| Getreide → Mehl → Brot | Bauernhof → Mühle → Bäckerei |
+| Soja → Milch / Tofu | Bauernhof → All Pro / Tofuhaus |
+| Weizen + Kichererbsen → Seitan | Bauernhof → Seitanwerk → Seitanmanufaktur → Streetfood |
+| Gemüse → Salat | Gewächshaus + Bauernhof → Salatbar |
+| Hafermilch + Brötchen | All Pro + Bäckerei → Café |
 
 ## Anpassbare Werte (Inspector)
 
 - **camera_controller.gd:** `pan_speed`, `zoom_min`, `zoom_max`
 - **building_placer.gd:** `selected_building_index` (Start-Gebäude)
 - **grid_manager.gd:** `ground_layer`, `building_layer` (werden von main.gd gesetzt)
+
+## Bevölkerungs-Alerts (Audio)
+
+Lege je eine Audiodatei ab (OGG/WAV/MP3):
+
+| Datei | Alert |
+|-------|-------|
+| `audio/vitamin_d_mangel.ogg` | Vitamin-D-Mangel |
+| `audio/b12_mangel.ogg` | Vitamin-B12-Mangel |
+| `audio/protein_mangel.ogg` | Proteinmangel |
+| `audio/essen_mangel.ogg` | Essensmangel |
+
+Jeder Sound spielt bei Mangel höchstens **alle 3 Spieltage** einmal. Status steht im HUD.
+
+Pfade ändern: **Project → Project Settings → Autoload → PopulationHealth**

@@ -4,18 +4,24 @@ extends Node
 
 signal money_changed(new_amount: int)
 signal income_changed(income_per_second: float)
+signal population_changed(population: int)
 
 const STARTING_MONEY: int = 500
+const PEOPLE_PER_HOUSE: int = 2
+const STARTING_POPULATION: int = 6
 
 var money: int = STARTING_MONEY
+var population: int = STARTING_POPULATION
 var _housing_income: float = 0.0
 var _income_accumulator: float = 0.0
 
 
 func _ready() -> void:
 	money = STARTING_MONEY
+	population = STARTING_POPULATION
 	money_changed.emit(money)
 	income_changed.emit(_housing_income)
+	population_changed.emit(population)
 
 
 func _process(delta: float) -> void:
@@ -51,14 +57,18 @@ func register_housing(income: int) -> void:
 	if income <= 0:
 		return
 	_housing_income += float(income)
+	population += PEOPLE_PER_HOUSE
 	income_changed.emit(_housing_income)
+	population_changed.emit(population)
 
 
 func unregister_housing(income: int) -> void:
 	if income <= 0:
 		return
 	_housing_income = maxf(0.0, _housing_income - float(income))
+	population = maxi(STARTING_POPULATION, population - PEOPLE_PER_HOUSE)
 	income_changed.emit(_housing_income)
+	population_changed.emit(population)
 
 
 func get_income_per_second() -> float:

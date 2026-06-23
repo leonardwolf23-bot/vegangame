@@ -67,7 +67,7 @@ func _spawn_citizens() -> void:
 			citizen.set_grid_manager(_grid)
 		if _grid and _grid.building_layer:
 			var spawn_tile := _pick_spawn_tile(i)
-			citizen.global_position = _grid.tile_to_world(spawn_tile)
+			citizen.global_position = _grid.tile_to_walk_world(spawn_tile)
 		else:
 			citizen.global_position = Vector2(100 + i * 20, 100)
 		_citizens.append(citizen)

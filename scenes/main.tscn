@@ -1,4 +1,4 @@
-[gd_scene load_steps=7 format=3 uid="uid://citybuilder_main"]
+[gd_scene load_steps=8 format=3 uid="uid://citybuilder_main"]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
 [ext_resource type="Script" path="res://scripts/camera_controller.gd" id="2_cam"]
@@ -6,6 +6,7 @@
 [ext_resource type="Script" path="res://scripts/building_placer.gd" id="4_placer"]
 [ext_resource type="PackedScene" path="res://scenes/build_menu.tscn" id="5_ui"]
 [ext_resource type="Script" path="res://scripts/citizen_manager.gd" id="6_citizens"]
+[ext_resource type="PackedScene" path="res://scenes/player.tscn" id="7_player"]
 
 [node name="Main" type="Node2D"]
 script = ExtResource("1_main")
@@ -28,6 +29,8 @@ z_index = -100
 
 [node name="BuildingLayer" type="TileMapLayer" parent="World"]
 y_sort_enabled = true
+
+[node name="Player" parent="World" instance=ExtResource("7_player")]
 
 [node name="CitizenManager" type="Node" parent="World"]
 script = ExtResource("6_citizens")

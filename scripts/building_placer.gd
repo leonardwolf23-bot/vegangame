@@ -10,7 +10,7 @@ extends Node2D
 @export_range(0.0, 1.0, 0.05) var sell_refund_factor: float = 0.5
 
 @export_group("Ghost-Vorschau")
-@export var ghost_offset_tiles: Vector2 = Vector2(0, 0.5)
+@export var ghost_offset_tiles: Vector2 = Vector2.ZERO
 
 var _grid: GridManager
 var _ghost: Sprite2D
@@ -34,6 +34,10 @@ func set_build_mode(active: bool) -> void:
 	_build_mode_active = active
 	if not _build_mode_active and _ghost:
 		_ghost.visible = false
+
+
+func is_build_mode_active() -> bool:
+	return _build_mode_active
 
 
 func _setup_ghost() -> void:
@@ -74,13 +78,13 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _get_placement_tile() -> Vector2i:
-	return _grid.world_to_tile(get_global_mouse_position())
+	return _grid.world_to_tile_from_mouse()
 
 
 func _can_place_building(tile: Vector2i, building: Dictionary) -> bool:
 	if not _grid.can_place_building(tile, building):
 		return false
-	return GameState.can_afford(BuildingCatalog.get_cost(building))
+	return BuildingCatalog.can_afford(building)
 
 
 func _update_ghost() -> void:
@@ -96,7 +100,7 @@ func _update_ghost() -> void:
 	var tile: Vector2i = _get_placement_tile()
 	var can_place: bool = _can_place_building(tile, building)
 
-	_ghost.global_position = _grid.tile_to_world(tile) + _get_ghost_offset()
+	_ghost.global_position = _grid.tile_to_walk_world(tile) + _get_ghost_offset()
 	_ghost.visible = true
 	_ghost.modulate = Color(0.3, 1.0, 0.3, 0.5) if can_place else Color(1.0, 0.3, 0.3, 0.5)
 
@@ -117,8 +121,7 @@ func _place_building(origin: Vector2i) -> void:
 	if not _can_place_building(origin, building):
 		return
 
-	var cost: int = BuildingCatalog.get_cost(building)
-	if not GameState.spend(cost):
+	if not BuildingCatalog.spend_build_cost(building):
 		return
 
 	var layer: TileMapLayer = _grid.building_layer
@@ -161,6 +164,12 @@ func _sell_building(tile: Vector2i) -> void:
 	var refund: int = int(cost * sell_refund_factor)
 	if refund > 0:
 		GameState.add_money(refund)
+
+	var resource_costs: Dictionary = data.get("resource_costs", {})
+	for resource_id in resource_costs:
+		var resource_refund := int(float(resource_costs[resource_id]) * sell_refund_factor)
+		if resource_refund > 0:
+			ProductionManager.add_resources({resource_id: float(resource_refund)})
 
 
 func _get_ghost_offset() -> Vector2:

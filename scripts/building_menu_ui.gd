@@ -19,6 +19,10 @@ var _building_buttons: Array[Button] = []
 var _mode_checks: Array[CheckBox] = []
 
 
+func _population_health() -> Node:
+	return get_node_or_null("/root/PopulationHealth")
+
+
 func _ready() -> void:
 	layer = 10
 	_placer = get_node_or_null(building_placer_path) as Node2D
@@ -34,6 +38,13 @@ func _ready() -> void:
 
 	GameState.money_changed.connect(_refresh_hud)
 	GameState.income_changed.connect(_refresh_hud)
+	GameState.population_changed.connect(_refresh_hud)
+	var health := _population_health()
+	if health:
+		if health.has_signal("health_status_changed"):
+			health.health_status_changed.connect(_refresh_hud)
+		elif health.has_signal("vitamin_d_deficiency_changed"):
+			health.vitamin_d_deficiency_changed.connect(_refresh_hud)
 	ProductionManager.resources_changed.connect(_refresh_hud)
 	ProductionManager.day_completed.connect(_refresh_hud)
 
@@ -129,9 +140,21 @@ func _refresh_hud(_arg = null) -> void:
 	if money_label:
 		money_label.text = "Geld: %d €" % GameState.money
 	if income_label:
-		income_label.text = "Wohn-Einkommen: +%d €/s" % int(GameState.get_income_per_second())
+		income_label.text = "Wohn-Einkommen: +%d €/s  |  Bevölkerung: %d" % [
+			int(GameState.get_income_per_second()),
+			GameState.population,
+		]
 	if resources_label:
-		resources_label.text = "\n".join(ProductionManager.get_summary_lines(10))
+		var lines := ProductionManager.get_summary_lines(9)
+		var health := _population_health()
+		if health:
+			if health.has_method("get_status_lines"):
+				var status_lines: PackedStringArray = health.get_status_lines()
+				for i in status_lines.size():
+					lines.insert(1 + i, status_lines[i])
+			elif health.has_method("get_status_line"):
+				lines.insert(1, health.get_status_line())
+		resources_label.text = "\n".join(lines)
 	_refresh_building_buttons()
 
 
@@ -139,4 +162,4 @@ func _refresh_building_buttons() -> void:
 	for i in _building_buttons.size():
 		var building: Dictionary = BuildingCatalog.get_building(i)
 		_building_buttons[i].text = BuildingCatalog.get_button_label(building)
-		_building_buttons[i].disabled = (i == _selected_index) or not GameState.can_afford(BuildingCatalog.get_cost(building))
+		_building_buttons[i].disabled = (i == _selected_index) or not BuildingCatalog.can_afford(building)

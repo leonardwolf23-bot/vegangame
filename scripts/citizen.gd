@@ -118,7 +118,7 @@ func _build_path_to(target_world: Vector2) -> void:
 
 	var from_tile := _grid.world_to_tile(global_position)
 	if _grid.can_walk_on(from_tile):
-		global_position = _grid.tile_to_world(from_tile)
+		global_position = _grid.tile_to_walk_world(from_tile)
 		_path_from_tile = from_tile
 	else:
 		_path_from_tile = from_tile
@@ -130,7 +130,7 @@ func _build_path_to(target_world: Vector2) -> void:
 		print("Citizen Pfad: %s -> %s (%d Schritte)" % [from_tile, to_tile, _path_tiles.size()])
 
 	for tile in _path_tiles:
-		_path_waypoints.append(_grid.tile_to_world(tile))
+		_path_waypoints.append(_grid.tile_to_walk_world(tile))
 
 	if _path_waypoints.is_empty():
 		push_warning("Citizen: Kein begehbarer Pfad von %s nach %s" % [from_tile, to_tile])
