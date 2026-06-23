@@ -2,6 +2,8 @@ extends Node
 ## Autoload: Alle Gebäude, Rezepte und Produktionsmodi.
 
 
+const BUILD_RESOURCE_COSTS: Dictionary = {"holz": 5, "stein": 5}
+
 const BUILDINGS: Array[Dictionary] = [
 	{
 		"id": "house",
@@ -14,6 +16,18 @@ const BUILDINGS: Array[Dictionary] = [
 		"footprint_offset": Vector2i(-1, -2),
 		"cost": 100,
 		"income": 5,
+	},
+	{
+		"id": "inn",
+		"name": "Gasthaus",
+		"kind": "inn",
+		"description": "Zentrale Essensversorgung — Bürger liefern fertiges Essen aus Bäckerei, Seitanfabrik usw.",
+		"source_id": 17,
+		"atlas_coords": Vector2i(0, 0),
+		"size": Vector2i(1, 1),
+		"footprint": Vector2i(3, 3),
+		"footprint_offset": Vector2i(-1, -2),
+		"cost": 280,
 	},
 	{
 		"id": "holzfaeller",
@@ -152,13 +166,13 @@ const BUILDINGS: Array[Dictionary] = [
 			{
 				"id": "seitanwuerste",
 				"label": "Seitanwürste",
-				"inputs": {"seitanpulver": 2.0, "kichererbsenmehl": 2.0},
+				"inputs": {"seitanpulver": 3.0},
 				"outputs": {"seitanwuerste": 4.0},
 			},
 			{
 				"id": "seitansteaks",
 				"label": "Seitansteaks",
-				"inputs": {"seitanpulver": 2.0, "kichererbsenmehl": 2.0},
+				"inputs": {"seitanpulver": 3.0, "kichererbsenmehl": 1.0},
 				"outputs": {"seitansteaks": 3.0},
 			},
 		],
@@ -196,6 +210,136 @@ const BUILDINGS: Array[Dictionary] = [
 		],
 		"default_modes": ["kaese"],
 	},
+	{
+		"id": "seitanwerk",
+		"name": "Seitanwerk",
+		"kind": "processor",
+		"source_id": 12,
+		"atlas_coords": Vector2i(0, 0),
+		"size": Vector2i(1, 1),
+		"footprint": Vector2i(3, 3),
+		"footprint_offset": Vector2i(-1, -2),
+		"cost": 300,
+		"recipes": [
+			{
+				"id": "seitanpulver",
+				"label": "Seitanpulver",
+				"inputs": {"weizen": 4.0, "kichererbsen": 4.0},
+				"outputs": {"seitanpulver": 5.0},
+			},
+		],
+		"default_modes": ["seitanpulver"],
+	},
+	{
+		"id": "tofuhaus",
+		"name": "Tofuhaus",
+		"kind": "processor",
+		"source_id": 13,
+		"atlas_coords": Vector2i(0, 0),
+		"size": Vector2i(1, 1),
+		"footprint": Vector2i(3, 3),
+		"footprint_offset": Vector2i(-1, -2),
+		"cost": 280,
+		"recipes": [
+			{"id": "tofu", "label": "Tofu", "inputs": {"sojabohnen": 6.0}, "outputs": {"tofu": 5.0}},
+			{
+				"id": "raeuchertofu",
+				"label": "Räuchertofu",
+				"inputs": {"sojabohnen": 8.0, "hafer": 2.0},
+				"outputs": {"raeuchertofu": 4.0},
+			},
+		],
+		"default_modes": ["tofu"],
+	},
+	{
+		"id": "salatbar",
+		"name": "Salatbar",
+		"kind": "processor",
+		"source_id": 14,
+		"atlas_coords": Vector2i(0, 0),
+		"size": Vector2i(1, 1),
+		"footprint": Vector2i(3, 3),
+		"footprint_offset": Vector2i(-1, -2),
+		"cost": 240,
+		"recipes": [
+			{
+				"id": "salat",
+				"label": "Großer Salat",
+				"inputs": {"eisbergsalat": 3.0, "tomaten": 2.0},
+				"outputs": {"salat": 6.0},
+			},
+			{
+				"id": "salat_mit_avocado",
+				"label": "Salat mit Avocado",
+				"inputs": {"eisbergsalat": 2.0, "avocados": 2.0, "tomaten": 1.0},
+				"outputs": {"salat": 5.0},
+			},
+		],
+		"default_modes": ["salat"],
+	},
+	{
+		"id": "cafe",
+		"name": "Café",
+		"kind": "processor",
+		"source_id": 15,
+		"atlas_coords": Vector2i(0, 0),
+		"size": Vector2i(1, 1),
+		"footprint": Vector2i(3, 3),
+		"footprint_offset": Vector2i(-1, -2),
+		"cost": 260,
+		"recipes": [
+			{
+				"id": "fruehstueck",
+				"label": "Frühstück",
+				"inputs": {"hafermilch": 3.0, "broetchen": 2.0},
+				"outputs": {"fruehstueck": 4.0},
+			},
+			{
+				"id": "soja_cappuccino",
+				"label": "Soja-Cappuccino",
+				"inputs": {"sojamilch": 4.0, "hafer": 1.0},
+				"outputs": {"fruehstueck": 3.0},
+			},
+		],
+		"default_modes": ["fruehstueck"],
+	},
+	{
+		"id": "streetfood",
+		"name": "Streetfood-Stand",
+		"kind": "processor",
+		"source_id": 16,
+		"atlas_coords": Vector2i(0, 0),
+		"size": Vector2i(1, 1),
+		"footprint": Vector2i(3, 3),
+		"footprint_offset": Vector2i(-1, -2),
+		"cost": 320,
+		"recipes": [
+			{
+				"id": "tofu_burger",
+				"label": "Tofu-Burger",
+				"inputs": {"tofu": 2.0, "broetchen": 1.0, "eisbergsalat": 1.0},
+				"outputs": {"streetfood": 4.0},
+			},
+			{
+				"id": "seitan_wrap",
+				"label": "Seitan-Wrap",
+				"inputs": {"seitanwuerste": 2.0, "tomaten": 1.0, "eisbergsalat": 1.0},
+				"outputs": {"streetfood": 3.0},
+			},
+		],
+		"default_modes": ["tofu_burger"],
+	},
+	{
+		"id": "gasthaus",
+		"name": "Gasthaus",
+		"kind": "inn",
+		"source_id": 17,
+		"atlas_coords": Vector2i(0, 0),
+		"size": Vector2i(1, 1),
+		"footprint": Vector2i(3, 3),
+		"footprint_offset": Vector2i(-1, -2),
+		"cost": 280,
+	},
 ]
 
 
@@ -213,12 +357,40 @@ func get_cost(building: Dictionary) -> int:
 	return int(building.get("cost", 0))
 
 
+func get_resource_costs(building: Dictionary) -> Dictionary:
+	if building.has("resource_costs"):
+		return building["resource_costs"].duplicate()
+	return BUILD_RESOURCE_COSTS.duplicate()
+
+
+func can_afford(building: Dictionary) -> bool:
+	if not GameState.can_afford(get_cost(building)):
+		return false
+	return ProductionManager.has_resources(get_resource_costs(building))
+
+
+func spend_build_cost(building: Dictionary) -> bool:
+	if not can_afford(building):
+		return false
+	var money_cost := get_cost(building)
+	if not GameState.spend(money_cost):
+		return false
+	if not ProductionManager.spend_resources(get_resource_costs(building)):
+		GameState.add_money(money_cost)
+		return false
+	return true
+
+
 func get_income(building: Dictionary) -> int:
 	return int(building.get("income", 0))
 
 
 func is_housing(building: Dictionary) -> bool:
 	return building.get("kind", "") == "housing"
+
+
+func is_inn(building: Dictionary) -> bool:
+	return building.get("kind", "") == "inn"
 
 
 func has_production_modes(building: Dictionary) -> bool:
@@ -268,4 +440,15 @@ func get_footprint_origin(anchor: Vector2i, building: Dictionary) -> Vector2i:
 
 
 func get_button_label(building: Dictionary) -> String:
-	return "%s  |  %d€" % [building.get("name", "Gebäude"), get_cost(building)]
+	var extras: PackedStringArray = []
+	var money := get_cost(building)
+	if money > 0:
+		extras.append("%d€" % money)
+	var resources := get_resource_costs(building)
+	if float(resources.get("holz", 0.0)) > 0.0:
+		extras.append("%d Holz" % int(resources["holz"]))
+	if float(resources.get("stein", 0.0)) > 0.0:
+		extras.append("%d Stein" % int(resources["stein"]))
+	if extras.is_empty():
+		return str(building.get("name", "Gebäude"))
+	return "%s  |  %s" % [building.get("name", "Gebäude"), " · ".join(extras)]
