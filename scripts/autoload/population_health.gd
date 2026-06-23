@@ -6,7 +6,7 @@ class_name PopulationHealthService
 signal vitamin_d_deficiency_changed(is_deficient: bool)
 
 const VITAMIN_D_PER_CITIZEN: float = 2.0
-const WARNING_COOLDOWN: float = 45.0
+const WARNING_INTERVAL_DAYS: int = 3
 
 @export_file("*.ogg", "*.wav", "*.mp3") var warning_audio_path: String = "res://audio/vitamin_d_mangel.ogg"
 
@@ -18,7 +18,7 @@ const VITAMIN_D_SOURCES: Dictionary = {
 }
 
 var _deficient: bool = false
-var _cooldown: float = 0.0
+var _last_warning_day: int = -WARNING_INTERVAL_DAYS
 var _audio: AudioStreamPlayer
 
 
@@ -30,11 +30,6 @@ func _ready() -> void:
 	ProductionManager.resources_changed.connect(_on_resources_changed)
 	GameState.population_changed.connect(_on_population_changed)
 	call_deferred("_check_vitamin_d")
-
-
-func _process(delta: float) -> void:
-	if _cooldown > 0.0:
-		_cooldown = maxf(_cooldown - delta, 0.0)
 
 
 func is_vitamin_d_deficient() -> bool:
@@ -75,37 +70,35 @@ func _load_warning_audio() -> void:
 		_audio.stream = stream
 
 
-func _on_day_completed(_day: int) -> void:
-	_check_vitamin_d(true)
+func _on_day_completed(day: int) -> void:
+	_check_vitamin_d(day)
 
 
 func _on_resources_changed() -> void:
-	_check_vitamin_d(false)
+	_check_vitamin_d()
 
 
 func _on_population_changed(_population: int) -> void:
-	_check_vitamin_d(false)
+	_check_vitamin_d()
 
 
-func _check_vitamin_d(force_audio: bool = false) -> void:
+func _check_vitamin_d(play_audio_on_day: int = -1) -> void:
 	var need := get_vitamin_d_need()
 	var deficient := need > 0.0 and get_vitamin_d_supply() < need
-
-	if deficient and (not _deficient or force_audio or _cooldown <= 0.0):
-		_play_warning()
 
 	if deficient != _deficient:
 		_deficient = deficient
 		vitamin_d_deficiency_changed.emit(_deficient)
 
-	if not deficient:
-		_cooldown = 0.0
+	if deficient and play_audio_on_day >= 0:
+		if play_audio_on_day - _last_warning_day >= WARNING_INTERVAL_DAYS:
+			_play_warning(play_audio_on_day)
 
 
-func _play_warning() -> void:
+func _play_warning(day: int) -> void:
 	if not _audio or not _audio.stream:
 		return
 	if _audio.playing:
 		return
 	_audio.play()
-	_cooldown = WARNING_COOLDOWN
+	_last_warning_day = day
