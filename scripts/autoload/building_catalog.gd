@@ -317,6 +317,17 @@ const BUILDINGS: Array[Dictionary] = [
 		],
 		"default_modes": ["tofu_burger"],
 	},
+	{
+		"id": "gasthaus",
+		"name": "Gasthaus",
+		"kind": "inn",
+		"source_id": 17,
+		"atlas_coords": Vector2i(0, 0),
+		"size": Vector2i(1, 1),
+		"footprint": Vector2i(3, 3),
+		"footprint_offset": Vector2i(-1, -2),
+		"cost": 280,
+	},
 ]
 
 
@@ -364,6 +375,10 @@ func get_income(building: Dictionary) -> int:
 
 func is_housing(building: Dictionary) -> bool:
 	return building.get("kind", "") == "housing"
+
+
+func is_inn(building: Dictionary) -> bool:
+	return building.get("kind", "") == "inn"
 
 
 func has_production_modes(building: Dictionary) -> bool:

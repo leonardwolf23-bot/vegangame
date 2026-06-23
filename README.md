@@ -88,6 +88,7 @@ Jedes Gebäude kostet zusätzlich **5 Holz** und **5 Stein** (aus dem Lager).
 | Weizen + Kichererbsen → Seitan | Bauernhof → Seitanwerk → Seitanmanufaktur → Streetfood |
 | Gemüse → Salat | Gewächshaus + Bauernhof → Salatbar |
 | Hafermilch + Brötchen | All Pro + Bäckerei → Café |
+| **Alle fertigen Speisen** | Produktion → **Gasthaus** (Bürger liefern hin) |
 
 ## Anpassbare Werte (Inspector)
 

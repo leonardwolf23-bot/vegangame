@@ -59,23 +59,9 @@ const ALERTS: Array[Dictionary] = [
 	},
 	{
 		"id": "food",
-		"label": "Essen",
+		"label": "Essen (Gasthaus)",
 		"need_per_citizen": 3.0,
-		"global_resource": "essen",
-		"sources": {
-			"broetchen": 1.0,
-			"bretzeln": 1.0,
-			"pommes": 0.8,
-			"hummus": 1.0,
-			"guacamole": 1.0,
-			"salat": 1.2,
-			"fruehstueck": 1.5,
-			"streetfood": 1.5,
-			"seitanwuerste": 1.0,
-			"seitansteaks": 1.2,
-			"tofu": 0.8,
-			"kaese": 0.8,
-		},
+		"use_inn_supply": true,
 	},
 ]
 
@@ -107,6 +93,10 @@ func is_vitamin_d_deficient() -> bool:
 
 
 func get_supply(alert: Dictionary) -> float:
+	if bool(alert.get("use_inn_supply", false)):
+		if ProductionManager.has_inn():
+			return ProductionManager.get_inn_food_supply()
+		return 0.0
 	var total := 0.0
 	if alert.has("global_resource"):
 		total += ProductionManager.get_amount(str(alert["global_resource"]))
