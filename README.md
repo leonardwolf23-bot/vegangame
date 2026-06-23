@@ -84,6 +84,8 @@ Jedes Gebäude kostet zusätzlich **5 Holz** und **5 Stein** (aus dem Lager).
 |-------|---------|
 | Holz / Stein | Holzfäller → Steinmetz |
 | Getreide → Mehl → Brot | Bauernhof → Mühle → Bäckerei |
+| Öl für Pommes | Bauernhof (Erdnüsse) → Ölmühle → Pommesbude (+ Kartoffeln) |
+| Tomaten → Ketchup | Gewächshaus/Bauernhof → Ketchupfabrik |
 | Soja → Milch / Tofu | Bauernhof → All Pro / Tofuhaus |
 | Weizen + Kichererbsen → Seitan | Bauernhof → Seitanwerk → Seitanmanufaktur → Streetfood |
 | Gemüse → Salat | Gewächshaus + Bauernhof → Salatbar |

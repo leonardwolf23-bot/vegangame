@@ -82,6 +82,8 @@ const BUILDINGS: Array[Dictionary] = [
 			{"id": "kichererbsen", "label": "Kichererbsen", "outputs_per_day": {"kichererbsen": 10.0}},
 			{"id": "hafer", "label": "Hafer", "outputs_per_day": {"hafer": 10.0}},
 			{"id": "kartoffeln", "label": "Kartoffeln", "outputs_per_day": {"kartoffeln": 10.0}},
+			{"id": "sonnenblumen", "label": "Sonnenblumen", "outputs_per_day": {"sonnenblumen": 10.0}},
+			{"id": "erdnuesse", "label": "Erdnüsse", "outputs_per_day": {"erdnuesse": 8.0}},
 		],
 		"default_modes": ["weizen"],
 	},
@@ -137,6 +139,47 @@ const BUILDINGS: Array[Dictionary] = [
 		"default_modes": ["weizenmehl"],
 	},
 	{
+		"id": "oelmuehle",
+		"name": "Ölmühle",
+		"kind": "processor",
+		"source_id": 18,
+		"atlas_coords": Vector2i(0, 0),
+		"size": Vector2i(1, 1),
+		"footprint": Vector2i(3, 3),
+		"footprint_offset": Vector2i(-1, -2),
+		"cost": 270,
+		"recipes": [
+			{
+				"id": "sonnenblumenoel",
+				"label": "Sonnenblumenöl",
+				"inputs": {"sonnenblumen": 5.0},
+				"outputs": {"sonnenblumenoel": 4.0},
+			},
+			{
+				"id": "erdnussoel",
+				"label": "Erdnussöl",
+				"inputs": {"erdnuesse": 5.0},
+				"outputs": {"erdnussoel": 4.0},
+			},
+		],
+		"default_modes": ["erdnussoel"],
+	},
+	{
+		"id": "ketchupfabrik",
+		"name": "Ketchupfabrik",
+		"kind": "processor",
+		"source_id": 19,
+		"atlas_coords": Vector2i(0, 0),
+		"size": Vector2i(1, 1),
+		"footprint": Vector2i(3, 3),
+		"footprint_offset": Vector2i(-1, -2),
+		"cost": 290,
+		"recipes": [
+			{"id": "ketchup", "label": "Ketchup", "inputs": {"tomaten": 5.0}, "outputs": {"ketchup": 5.0}},
+		],
+		"default_modes": ["ketchup"],
+	},
+	{
 		"id": "baeckerei",
 		"name": "Bäckerei",
 		"kind": "processor",
@@ -189,7 +232,12 @@ const BUILDINGS: Array[Dictionary] = [
 		"footprint_offset": Vector2i(-1, -2),
 		"cost": 300,
 		"recipes": [
-			{"id": "pommes", "label": "Pommes", "inputs": {"kartoffeln": 4.0}, "outputs": {"pommes": 6.0}},
+			{
+				"id": "pommes",
+				"label": "Pommes",
+				"inputs": {"kartoffeln": 4.0, "erdnussoel": 1.0},
+				"outputs": {"pommes": 6.0},
+			},
 			{"id": "hummus", "label": "Hummus", "inputs": {"kichererbsen": 3.0, "tomaten": 1.0}, "outputs": {"hummus": 4.0}},
 			{"id": "guacamole", "label": "Guacamole", "inputs": {"avocados": 3.0, "tomaten": 1.0}, "outputs": {"guacamole": 4.0}},
 		],
@@ -329,17 +377,6 @@ const BUILDINGS: Array[Dictionary] = [
 		],
 		"default_modes": ["tofu_burger"],
 	},
-	{
-		"id": "gasthaus",
-		"name": "Gasthaus",
-		"kind": "inn",
-		"source_id": 17,
-		"atlas_coords": Vector2i(0, 0),
-		"size": Vector2i(1, 1),
-		"footprint": Vector2i(3, 3),
-		"footprint_offset": Vector2i(-1, -2),
-		"cost": 280,
-	},
 ]
 
 
@@ -383,6 +420,10 @@ func spend_build_cost(building: Dictionary) -> bool:
 
 func get_income(building: Dictionary) -> int:
 	return int(building.get("income", 0))
+
+
+func get_description(building: Dictionary) -> String:
+	return str(building.get("description", ""))
 
 
 func is_housing(building: Dictionary) -> bool:

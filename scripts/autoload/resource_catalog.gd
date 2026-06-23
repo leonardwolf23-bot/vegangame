@@ -18,9 +18,12 @@ const DISPLAY_NAMES: Dictionary = {
 	"kichererbsen": "Kichererbsen",
 	"hafer": "Hafer",
 	"kartoffeln": "Kartoffeln",
+	"sonnenblumen": "Sonnenblumen",
+	"erdnuesse": "Erdnüsse",
 	"cashewkerne": "Cashewkerne",
 	"avocados": "Avocados",
 	"tomaten": "Tomaten",
+	"ketchup": "Ketchup",
 	"eisbergsalat": "Eisbergsalat",
 	"sojamilch": "Sojamilch",
 	"hafermilch": "Hafermilch",
@@ -41,6 +44,8 @@ const DISPLAY_NAMES: Dictionary = {
 	"salat": "Salat",
 	"fruehstueck": "Frühstück",
 	"streetfood": "Streetfood",
+	"sonnenblumenoel": "Sonnenblumenöl",
+	"erdnussoel": "Erdnussöl",
 }
 
 ## Fertige Speisen — werden ans Gasthaus geliefert (Wert = Essens-Einheiten).
