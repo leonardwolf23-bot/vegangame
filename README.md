@@ -99,7 +99,7 @@ Jedes Gebäude kostet zusätzlich **5 Holz** und **5 Stein** (aus dem Lager).
 
 1. Audiodatei nach `audio/vitamin_d_mangel.ogg` legen (OGG, WAV oder MP3)
 2. Godot importiert die Datei automatisch
-3. Sound spielt ab, wenn die Bevölkerung **Vitamin-D-Mangel** hat
+3. Sound spielt bei **Vitamin-D-Mangel** ab — höchstens **alle 3 Spieltage** einmal
 
 **Vitamin D** kommt aus angereicherten Produkten: Hafermilch, Sojamilch, Sojajoghurt, Frühstück (Café-Kette).  
 Bedarf: 2 Einheiten pro Einwohner. Status steht im HUD unter den Ressourcen.
