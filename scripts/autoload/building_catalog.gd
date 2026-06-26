@@ -12,7 +12,7 @@ const BUILDINGS: Array[Dictionary] = [
 		"atlas_coords": Vector2i(0, 0),
 		"size": Vector2i(4, 4),
 		"footprint": Vector2i(4, 4),
-		"footprint_offset": Vector2i.ZERO,
+		"footprint_offset": Vector2i(0, -2),
 		"snap_grid": 4,
 		"cost": 15,
 	},
