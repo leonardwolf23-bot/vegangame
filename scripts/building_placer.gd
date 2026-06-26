@@ -231,7 +231,7 @@ func _sell_building(tile: Vector2i) -> void:
 		return
 
 	var anchor: Vector2i = data.get("anchor", Vector2i.ZERO)
-	var building_index: int = int(data.get("building_index", -1))
+	building_index = int(data.get("building_index", building_index))
 	var building: Dictionary = BuildingCatalog.get_building(building_index)
 	if not BuildingCatalog.is_road(building) and BuildingCatalog.needs_production_manager(building):
 		ProductionManager.unregister_building(anchor)
