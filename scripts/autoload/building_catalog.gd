@@ -7,7 +7,6 @@ const BUILDINGS: Array[Dictionary] = [
 		"id": "strasse",
 		"name": "Straße",
 		"kind": "road",
-		"place_layer": "ground",
 		"source_id": 0,
 		"atlas_coords": Vector2i(0, 0),
 		"size": Vector2i(4, 4),
