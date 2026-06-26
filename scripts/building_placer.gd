@@ -220,9 +220,9 @@ func place_starter_building(building_id: String, anchor: Vector2i) -> bool:
 
 
 func _sell_building(tile: Vector2i) -> void:
-	var building_index := _grid.get_building_index_at(tile)
-	if building_index >= 0:
-		var blocked: Dictionary = BuildingCatalog.get_building(building_index)
+	var existing_index := _grid.get_building_index_at(tile)
+	if existing_index >= 0:
+		var blocked: Dictionary = BuildingCatalog.get_building(existing_index)
 		if bool(blocked.get("starter_only", false)):
 			return
 
@@ -231,8 +231,8 @@ func _sell_building(tile: Vector2i) -> void:
 		return
 
 	var anchor: Vector2i = data.get("anchor", Vector2i.ZERO)
-	building_index = int(data.get("building_index", building_index))
-	var building: Dictionary = BuildingCatalog.get_building(building_index)
+	var sold_index: int = int(data.get("building_index", -1))
+	var building: Dictionary = BuildingCatalog.get_building(sold_index)
 	if not BuildingCatalog.is_road(building) and BuildingCatalog.needs_production_manager(building):
 		ProductionManager.unregister_building(anchor)
 	if BuildingCatalog.is_housing(building):
