@@ -12,6 +12,7 @@ const BUILDINGS: Array[Dictionary] = [
 		"atlas_coords": Vector2i(0, 0),
 		"size": Vector2i(4, 4),
 		"footprint": Vector2i(4, 4),
+		## Versatz nach dem 4er-Snap: (0, -2) = Block startet 2 Tiles nordwärts.
 		"footprint_offset": Vector2i(0, -2),
 		"snap_grid": 4,
 		"cost": 15,
@@ -294,6 +295,15 @@ func snap_placement_anchor(anchor: Vector2i, building: Dictionary) -> Vector2i:
 	var snap: int = int(building.get("snap_grid", 0))
 	if snap <= 1:
 		return anchor
+
+	# Straßen: erst Klick auf 4er-Raster, dann footprint_offset anwenden.
+	# Sonst schluckt der Snap kleine Offsets (z. B. (0,-2) landet in derselben Zelle).
+	if is_road(building):
+		return Vector2i(
+			int(floor(float(anchor.x) / float(snap))) * snap,
+			int(floor(float(anchor.y) / float(snap))) * snap,
+		)
+
 	var foot_origin := get_footprint_origin(anchor, building)
 	var snapped_foot := Vector2i(
 		int(floor(float(foot_origin.x) / float(snap))) * snap,
