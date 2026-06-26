@@ -37,6 +37,10 @@ func set_build_mode(active: bool) -> void:
 		_hide_ghost()
 
 
+func is_build_mode_active() -> bool:
+	return _build_mode_active
+
+
 func _setup_ghost() -> void:
 	_ghost_root = Node2D.new()
 	_ghost_root.z_index = 100
