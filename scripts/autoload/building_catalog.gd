@@ -263,7 +263,9 @@ func get_recipe(building: Dictionary, recipe_id: String) -> Dictionary:
 
 
 func get_footprint(building: Dictionary) -> Vector2i:
-	return building.get("footprint", Vector2i.ONE)
+	if building.has("footprint"):
+		return building["footprint"] as Vector2i
+	return Vector2i.ONE
 
 
 ## Obere linke Ecke des Blocks — immer der Klick-Anker, keine versteckten Offsets.
@@ -271,10 +273,17 @@ func get_block_origin(anchor: Vector2i) -> Vector2i:
 	return anchor
 
 
+## Alias für ältere Skripte.
+func get_footprint_origin(anchor: Vector2i, _building: Dictionary = {}) -> Vector2i:
+	return get_block_origin(anchor)
+
+
 func get_sprite_cell(building: Dictionary) -> Vector2i:
 	if is_road(building):
 		return Vector2i.ZERO
-	return building.get("sprite_cell", Vector2i(1, 1))
+	if building.has("sprite_cell"):
+		return building["sprite_cell"] as Vector2i
+	return Vector2i(1, 1)
 
 
 func get_sprite_tile(anchor: Vector2i, building: Dictionary) -> Vector2i:
@@ -282,8 +291,8 @@ func get_sprite_tile(anchor: Vector2i, building: Dictionary) -> Vector2i:
 
 
 func get_block_center(anchor: Vector2i, building: Dictionary) -> Vector2i:
-	var footprint := get_footprint(building)
-	var origin := get_block_origin(anchor)
+	var footprint: Vector2i = get_footprint(building)
+	var origin: Vector2i = get_block_origin(anchor)
 	return origin + Vector2i((footprint.x - 1) / 2, (footprint.y - 1) / 2)
 
 

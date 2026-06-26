@@ -308,8 +308,8 @@ func remove_building_at(tile: Vector2i) -> Dictionary:
 		return {}
 
 	var data: Dictionary = _placed[anchor].duplicate()
-	var footprint: Vector2i = data["footprint"]
-	var foot_origin: Vector2i = data["foot_origin"]
+	var footprint: Vector2i = data["footprint"] as Vector2i
+	var foot_origin: Vector2i = data["foot_origin"] as Vector2i
 
 	for x in range(footprint.x):
 		for y in range(footprint.y):
@@ -324,7 +324,7 @@ func remove_building_at(tile: Vector2i) -> Dictionary:
 	var layer := building_layer
 	if data.get("place_layer", "building") == "ground":
 		layer = ground_layer
-	var sprite_tile: Vector2i = data.get("sprite_tile", anchor)
+	var sprite_tile: Vector2i = data.get("sprite_tile", anchor) as Vector2i
 	if layer:
 		layer.erase_cell(sprite_tile)
 	return data
