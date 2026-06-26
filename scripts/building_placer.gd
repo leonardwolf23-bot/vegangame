@@ -10,8 +10,7 @@ extends Node2D
 @export_range(0.0, 1.0, 0.05) var sell_refund_factor: float = 0.5
 
 @export_group("Ghost-Vorschau")
-@export_range(0.0, 1.0, 0.05) var footprint_preview_alpha: float = 0.22
-
+@export var ghost_offset_tiles: Vector2 = Vector2(0, 0.5)
 var _grid: GridManager
 var _ghost_root: Node2D
 var _ghost_cells: Array[Sprite2D] = []
@@ -130,6 +129,8 @@ func _update_ghost() -> void:
 	var ok_tint := Color(0.35, 1.0, 0.45, 0.55)
 	var bad_tint := Color(1.0, 0.35, 0.35, 0.55)
 
+	var ghost_offset := _get_ghost_offset()
+
 	if is_road:
 		_ensure_ghost_cells(footprint.x * footprint.y)
 		var index := 0
@@ -137,7 +138,7 @@ func _update_ghost() -> void:
 			for x in range(footprint.x):
 				var cell := block_origin + Vector2i(x, y)
 				var sprite := _ghost_cells[index]
-				sprite.global_position = _grid.tile_to_world(cell)
+				sprite.global_position = _grid.tile_to_world(cell) + ghost_offset
 				sprite.texture = atlas.texture
 				sprite.region_enabled = true
 				sprite.region_rect = region
@@ -148,7 +149,7 @@ func _update_ghost() -> void:
 	var sprite_tile := BuildingCatalog.get_sprite_tile(anchor, building)
 	_ensure_ghost_cells(1)
 	var ghost := _ghost_cells[0]
-	ghost.global_position = _grid.tile_to_world(sprite_tile)
+	ghost.global_position = _grid.tile_to_world(sprite_tile) + ghost_offset
 	ghost.texture = atlas.texture
 	ghost.region_enabled = true
 	ghost.region_rect = region
@@ -213,3 +214,24 @@ func _sell_building(tile: Vector2i) -> void:
 	var refund: int = int(cost * sell_refund_factor)
 	if refund > 0:
 		GameState.add_money(refund)
+
+
+func _get_ghost_offset() -> Vector2:
+	if not _grid or not _grid.building_layer:
+		return Vector2.ZERO
+	var layer := _grid.building_layer
+
+	var full := Vector2i(
+		int(floor(ghost_offset_tiles.x)),
+		int(floor(ghost_offset_tiles.y))
+	)
+	var frac := ghost_offset_tiles - Vector2(full)
+
+	var offset := layer.map_to_local(full) - layer.map_to_local(Vector2i.ZERO)
+
+	if frac != Vector2.ZERO:
+		var step_x := layer.map_to_local(Vector2i(1, 0)) - layer.map_to_local(Vector2i.ZERO)
+		var step_y := layer.map_to_local(Vector2i(0, 1)) - layer.map_to_local(Vector2i.ZERO)
+		offset += step_x * frac.x + step_y * frac.y
+
+	return offset
