@@ -10,7 +10,7 @@ extends Node2D
 @export_range(0.0, 1.0, 0.05) var sell_refund_factor: float = 0.5
 
 @export_group("Ghost-Vorschau")
-@export var ghost_offset_tiles: Vector2 = Vector2(0, 0.5)
+@export_range(0.0, 1.0, 0.05) var footprint_preview_alpha: float = 0.22
 
 var _grid: GridManager
 var _ghost_root: Node2D
@@ -55,7 +55,6 @@ func _hide_ghost() -> void:
 func _ensure_ghost_cells(count: int) -> void:
 	while _ghost_cells.size() < count:
 		var sprite := Sprite2D.new()
-		sprite.modulate = Color(1, 1, 1, 0.5)
 		sprite.y_sort_enabled = false
 		_ghost_root.add_child(sprite)
 		_ghost_cells.append(sprite)
@@ -117,9 +116,10 @@ func _update_ghost() -> void:
 
 	var anchor: Vector2i = _get_placement_tile()
 	var can_place: bool = _can_place_building(anchor, building)
-	var place_origin := BuildingCatalog.get_visual_origin(anchor, building)
-	var size: Vector2i = BuildingCatalog.get_visual_size(building)
-	var tint := Color(0.3, 1.0, 0.3, 0.5) if can_place else Color(1.0, 0.3, 0.3, 0.5)
+	var block_origin := BuildingCatalog.get_block_origin(anchor)
+	var footprint := BuildingCatalog.get_footprint(building)
+	var sprite_cell := BuildingCatalog.get_sprite_cell(building)
+	var is_road := BuildingCatalog.is_road(building)
 
 	var tile_data = layer.tile_set.get_source(building["source_id"])
 	if not tile_data is TileSetAtlasSource:
@@ -128,42 +128,51 @@ func _update_ghost() -> void:
 
 	var atlas: TileSetAtlasSource = tile_data
 	var region := atlas.get_tile_texture_region(building["atlas_coords"])
-	var ghost_offset := _get_ghost_offset()
+	var ok_tint := Color(0.35, 1.0, 0.45, 0.55)
+	var bad_tint := Color(1.0, 0.35, 0.35, 0.55)
+	var footprint_tint := Color(0.4, 0.85, 1.0, footprint_preview_alpha)
+	if not can_place:
+		footprint_tint = Color(1.0, 0.4, 0.4, footprint_preview_alpha)
 
-	_ensure_ghost_cells(size.x * size.y)
+	_ensure_ghost_cells(footprint.x * footprint.y)
 	var index := 0
-	for x in range(size.x):
-		for y in range(size.y):
-			var cell: Vector2i = place_origin + Vector2i(x, y)
+	for y in range(footprint.y):
+		for x in range(footprint.x):
+			var cell := block_origin + Vector2i(x, y)
 			var sprite := _ghost_cells[index]
-			sprite.global_position = _grid.tile_to_world(cell) + ghost_offset
+			sprite.global_position = _grid.tile_to_world(cell)
 			sprite.texture = atlas.texture
 			sprite.region_enabled = true
 			sprite.region_rect = region
-			sprite.modulate = tint
+
+			var is_sprite_cell := is_road or Vector2i(x, y) == sprite_cell
+			if is_sprite_cell:
+				sprite.modulate = ok_tint if can_place else bad_tint
+			else:
+				sprite.modulate = footprint_tint
 			index += 1
 
 
-func _place_building(origin: Vector2i) -> void:
+func _place_building(anchor: Vector2i) -> void:
 	var building_index: int = selected_building_index
 	var building: Dictionary = BuildingCatalog.get_building(building_index)
 	if building.is_empty():
 		return
 
-	if not _can_place_building(origin, building):
+	if not _can_place_building(anchor, building):
 		return
 
 	var cost: int = BuildingCatalog.get_cost(building)
 	if not GameState.spend(cost):
 		return
 
-	var place_origin := BuildingCatalog.get_visual_origin(origin, building)
-	var size: Vector2i = BuildingCatalog.get_visual_size(building)
+	var block_origin := BuildingCatalog.get_block_origin(anchor)
+	var footprint := BuildingCatalog.get_footprint(building)
 
 	if BuildingCatalog.is_road(building):
 		_grid.place_ground_overlay(
-			place_origin,
-			size,
+			block_origin,
+			footprint,
 			building["source_id"],
 			building["atlas_coords"],
 		)
@@ -171,20 +180,15 @@ func _place_building(origin: Vector2i) -> void:
 		var layer: TileMapLayer = _grid.get_place_layer(building)
 		if not layer:
 			return
-		for x in range(size.x):
-			for y in range(size.y):
-				var cell: Vector2i = place_origin + Vector2i(x, y)
-				layer.set_cell(cell, building["source_id"], building["atlas_coords"])
+		var sprite_tile := BuildingCatalog.get_sprite_tile(anchor, building)
+		layer.set_cell(sprite_tile, building["source_id"], building["atlas_coords"])
 
-	_grid.register_building(origin, building_index, building)
+	_grid.register_building(anchor, building_index, building)
 	if BuildingCatalog.is_road(building):
 		return
 	if not BuildingCatalog.is_housing(building):
-		var foot_origin := BuildingCatalog.get_footprint_origin(origin, building)
-		var footprint := BuildingCatalog.get_footprint(building)
-		var center_tile := foot_origin + Vector2i(footprint.x / 2, footprint.y / 2)
-		var world_pos := _grid.tile_to_world(center_tile)
-		ProductionManager.register_building(origin, building_index, world_pos)
+		var world_pos := _grid.tile_to_world(BuildingCatalog.get_block_center(anchor, building))
+		ProductionManager.register_building(anchor, building_index, world_pos)
 
 	if BuildingCatalog.is_housing(building):
 		GameState.register_housing(BuildingCatalog.get_income(building))
@@ -207,24 +211,3 @@ func _sell_building(tile: Vector2i) -> void:
 	var refund: int = int(cost * sell_refund_factor)
 	if refund > 0:
 		GameState.add_money(refund)
-
-
-func _get_ghost_offset() -> Vector2:
-	if not _grid or not _grid.building_layer:
-		return Vector2.ZERO
-	var layer := _grid.building_layer
-
-	var full := Vector2i(
-		int(floor(ghost_offset_tiles.x)),
-		int(floor(ghost_offset_tiles.y))
-	)
-	var frac := ghost_offset_tiles - Vector2(full)
-
-	var offset := layer.map_to_local(full) - layer.map_to_local(Vector2i.ZERO)
-
-	if frac != Vector2.ZERO:
-		var step_x := layer.map_to_local(Vector2i(1, 0)) - layer.map_to_local(Vector2i.ZERO)
-		var step_y := layer.map_to_local(Vector2i(0, 1)) - layer.map_to_local(Vector2i.ZERO)
-		offset += step_x * frac.x + step_y * frac.y
-
-	return offset

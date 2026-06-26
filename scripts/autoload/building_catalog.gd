@@ -1,5 +1,11 @@
 extends Node
 ## Autoload: Alle Gebäude, Rezepte und Produktionsmodi.
+##
+## Platzierungs-Modell (einfach):
+## - Klick-Anker = obere linke Ecke des Footprint-Blocks
+## - footprint = wie viele Tiles belegt/blockiert werden (z. B. 3×3, 4×4)
+## - sprite_cell = welches Tile im Block das Gebäude-Bild bekommt (nur Gebäude)
+## - Straßen malen den ganzen footprint auf dem Boden
 
 
 const BUILDINGS: Array[Dictionary] = [
@@ -10,10 +16,7 @@ const BUILDINGS: Array[Dictionary] = [
 		"place_layer": "ground",
 		"source_id": 0,
 		"atlas_coords": Vector2i(0, 0),
-		"size": Vector2i(4, 4),
-		"visual_offset": Vector2i(0, -2),
 		"footprint": Vector2i(4, 4),
-		"footprint_offset": Vector2i(0, -2),
 		"snap_grid": 4,
 		"cost": 15,
 	},
@@ -23,9 +26,8 @@ const BUILDINGS: Array[Dictionary] = [
 		"kind": "housing",
 		"source_id": 0,
 		"atlas_coords": Vector2i(0, 0),
-		"size": Vector2i(1, 1),
 		"footprint": Vector2i(3, 3),
-		"footprint_offset": Vector2i(-1, -2),
+		"sprite_cell": Vector2i(1, 1),
 		"cost": 100,
 		"income": 5,
 	},
@@ -35,9 +37,8 @@ const BUILDINGS: Array[Dictionary] = [
 		"kind": "extractor",
 		"source_id": 1,
 		"atlas_coords": Vector2i(0, 0),
-		"size": Vector2i(1, 1),
 		"footprint": Vector2i(3, 3),
-		"footprint_offset": Vector2i(-1, -2),
+		"sprite_cell": Vector2i(1, 1),
 		"cost": 120,
 		"outputs_per_day": {"holz": 15.0},
 	},
@@ -47,9 +48,8 @@ const BUILDINGS: Array[Dictionary] = [
 		"kind": "extractor",
 		"source_id": 2,
 		"atlas_coords": Vector2i(0, 0),
-		"size": Vector2i(1, 1),
 		"footprint": Vector2i(3, 3),
-		"footprint_offset": Vector2i(-1, -2),
+		"sprite_cell": Vector2i(1, 1),
 		"cost": 120,
 		"outputs_per_day": {"stein": 12.0},
 	},
@@ -59,9 +59,8 @@ const BUILDINGS: Array[Dictionary] = [
 		"kind": "extractor",
 		"source_id": 3,
 		"atlas_coords": Vector2i(0, 0),
-		"size": Vector2i(1, 1),
 		"footprint": Vector2i(3, 3),
-		"footprint_offset": Vector2i(-1, -2),
+		"sprite_cell": Vector2i(1, 1),
 		"cost": 200,
 		"skip_water_upkeep": true,
 		"outputs_per_day": {"wasser": 500.0},
@@ -72,9 +71,8 @@ const BUILDINGS: Array[Dictionary] = [
 		"kind": "multi_extractor",
 		"source_id": 4,
 		"atlas_coords": Vector2i(0, 0),
-		"size": Vector2i(1, 1),
 		"footprint": Vector2i(3, 3),
-		"footprint_offset": Vector2i(-1, -2),
+		"sprite_cell": Vector2i(1, 1),
 		"cost": 250,
 		"modes": [
 			{"id": "weizen", "label": "Weizen", "outputs_per_day": {"weizen": 10.0}},
@@ -91,9 +89,8 @@ const BUILDINGS: Array[Dictionary] = [
 		"kind": "multi_extractor",
 		"source_id": 5,
 		"atlas_coords": Vector2i(0, 0),
-		"size": Vector2i(1, 1),
 		"footprint": Vector2i(3, 3),
-		"footprint_offset": Vector2i(-1, -2),
+		"sprite_cell": Vector2i(1, 1),
 		"cost": 300,
 		"modes": [
 			{"id": "cashewkerne", "label": "Cashewkerne", "outputs_per_day": {"cashewkerne": 6.0}},
@@ -109,9 +106,8 @@ const BUILDINGS: Array[Dictionary] = [
 		"kind": "processor",
 		"source_id": 6,
 		"atlas_coords": Vector2i(0, 0),
-		"size": Vector2i(1, 1),
 		"footprint": Vector2i(3, 3),
-		"footprint_offset": Vector2i(-1, -2),
+		"sprite_cell": Vector2i(1, 1),
 		"cost": 350,
 		"recipes": [
 			{"id": "sojamilch", "label": "Sojamilch", "inputs": {"sojabohnen": 5.0}, "outputs": {"sojamilch": 5.0}},
@@ -126,9 +122,8 @@ const BUILDINGS: Array[Dictionary] = [
 		"kind": "processor",
 		"source_id": 7,
 		"atlas_coords": Vector2i(0, 0),
-		"size": Vector2i(1, 1),
 		"footprint": Vector2i(3, 3),
-		"footprint_offset": Vector2i(-1, -2),
+		"sprite_cell": Vector2i(1, 1),
 		"cost": 280,
 		"recipes": [
 			{"id": "weizenmehl", "label": "Weizenmehl", "inputs": {"weizen": 5.0}, "outputs": {"weizenmehl": 5.0}},
@@ -142,9 +137,8 @@ const BUILDINGS: Array[Dictionary] = [
 		"kind": "processor",
 		"source_id": 8,
 		"atlas_coords": Vector2i(0, 0),
-		"size": Vector2i(1, 1),
 		"footprint": Vector2i(3, 3),
-		"footprint_offset": Vector2i(-1, -2),
+		"sprite_cell": Vector2i(1, 1),
 		"cost": 260,
 		"recipes": [
 			{"id": "broetchen", "label": "Brötchen", "inputs": {"weizenmehl": 3.0}, "outputs": {"broetchen": 5.0}},
@@ -158,9 +152,8 @@ const BUILDINGS: Array[Dictionary] = [
 		"kind": "processor",
 		"source_id": 9,
 		"atlas_coords": Vector2i(0, 0),
-		"size": Vector2i(1, 1),
 		"footprint": Vector2i(3, 3),
-		"footprint_offset": Vector2i(-1, -2),
+		"sprite_cell": Vector2i(1, 1),
 		"cost": 320,
 		"recipes": [
 			{
@@ -184,9 +177,8 @@ const BUILDINGS: Array[Dictionary] = [
 		"kind": "processor",
 		"source_id": 10,
 		"atlas_coords": Vector2i(0, 0),
-		"size": Vector2i(1, 1),
 		"footprint": Vector2i(3, 3),
-		"footprint_offset": Vector2i(-1, -2),
+		"sprite_cell": Vector2i(1, 1),
 		"cost": 300,
 		"recipes": [
 			{"id": "pommes", "label": "Pommes", "inputs": {"kartoffeln": 4.0}, "outputs": {"pommes": 6.0}},
@@ -201,9 +193,8 @@ const BUILDINGS: Array[Dictionary] = [
 		"kind": "processor",
 		"source_id": 11,
 		"atlas_coords": Vector2i(0, 0),
-		"size": Vector2i(1, 1),
 		"footprint": Vector2i(3, 3),
-		"footprint_offset": Vector2i(-1, -2),
+		"sprite_cell": Vector2i(1, 1),
 		"cost": 340,
 		"recipes": [
 			{"id": "kaese", "label": "Väse (Käse)", "inputs": {"cashewkerne": 4.0}, "outputs": {"kaese": 3.0}},
@@ -272,58 +263,38 @@ func get_recipe(building: Dictionary, recipe_id: String) -> Dictionary:
 
 
 func get_footprint(building: Dictionary) -> Vector2i:
-	if building.has("footprint"):
-		return building["footprint"]
-	return building.get("size", Vector2i.ONE)
+	return building.get("footprint", Vector2i.ONE)
 
 
-func get_footprint_offset(building: Dictionary) -> Vector2i:
-	return building.get("footprint_offset", Vector2i.ZERO)
-
-
-func get_visual_size(building: Dictionary) -> Vector2i:
-	return building.get("size", Vector2i.ONE)
-
-
-func get_visual_origin(anchor: Vector2i, building: Dictionary) -> Vector2i:
-	if building.has("visual_offset"):
-		return anchor + building["visual_offset"]
+## Obere linke Ecke des Blocks — immer der Klick-Anker, keine versteckten Offsets.
+func get_block_origin(anchor: Vector2i) -> Vector2i:
 	return anchor
 
 
-func get_footprint_origin(anchor: Vector2i, building: Dictionary) -> Vector2i:
-	return anchor + get_footprint_offset(building)
-
-
-func get_place_origin(anchor: Vector2i, building: Dictionary) -> Vector2i:
+func get_sprite_cell(building: Dictionary) -> Vector2i:
 	if is_road(building):
-		return get_visual_origin(anchor, building)
-	return anchor
+		return Vector2i.ZERO
+	return building.get("sprite_cell", Vector2i(1, 1))
 
 
-func get_blocking_origin(anchor: Vector2i, building: Dictionary) -> Vector2i:
-	return get_footprint_origin(anchor, building)
+func get_sprite_tile(anchor: Vector2i, building: Dictionary) -> Vector2i:
+	return get_block_origin(anchor) + get_sprite_cell(building)
+
+
+func get_block_center(anchor: Vector2i, building: Dictionary) -> Vector2i:
+	var footprint := get_footprint(building)
+	var origin := get_block_origin(anchor)
+	return origin + Vector2i((footprint.x - 1) / 2, (footprint.y - 1) / 2)
 
 
 func snap_placement_anchor(anchor: Vector2i, building: Dictionary) -> Vector2i:
 	var snap: int = int(building.get("snap_grid", 0))
 	if snap <= 1:
 		return anchor
-
-	# Straßen: erst Klick auf 4er-Raster, dann footprint_offset anwenden.
-	# Sonst schluckt der Snap kleine Offsets (z. B. (0,-2) landet in derselben Zelle).
-	if is_road(building):
-		return Vector2i(
-			int(floor(float(anchor.x) / float(snap))) * snap,
-			int(floor(float(anchor.y) / float(snap))) * snap,
-		)
-
-	var foot_origin := get_footprint_origin(anchor, building)
-	var snapped_foot := Vector2i(
-		int(floor(float(foot_origin.x) / float(snap))) * snap,
-		int(floor(float(foot_origin.y) / float(snap))) * snap,
+	return Vector2i(
+		int(floor(float(anchor.x) / float(snap))) * snap,
+		int(floor(float(anchor.y) / float(snap))) * snap,
 	)
-	return snapped_foot - get_footprint_offset(building)
 
 
 func get_button_label(building: Dictionary) -> String:

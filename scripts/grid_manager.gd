@@ -269,13 +269,13 @@ func can_place(origin: Vector2i, size: Vector2i) -> bool:
 
 
 func can_place_building(anchor: Vector2i, building: Dictionary) -> bool:
-	var block_origin := BuildingCatalog.get_blocking_origin(anchor, building)
+	var block_origin := BuildingCatalog.get_block_origin(anchor)
 	return can_place(block_origin, BuildingCatalog.get_footprint(building))
 
 
 func register_building(anchor: Vector2i, building_index: int, building: Dictionary) -> void:
 	var footprint: Vector2i = BuildingCatalog.get_footprint(building)
-	var block_origin: Vector2i = BuildingCatalog.get_blocking_origin(anchor, building)
+	var block_origin: Vector2i = BuildingCatalog.get_block_origin(anchor)
 	var backup: Dictionary = {}
 	if BuildingCatalog.is_road(building):
 		backup = _pending_ground_backup
@@ -290,8 +290,7 @@ func register_building(anchor: Vector2i, building_index: int, building: Dictiona
 		"income": BuildingCatalog.get_income(building),
 		"kind": building.get("kind", "building"),
 		"place_layer": building.get("place_layer", "building"),
-		"place_origin": BuildingCatalog.get_visual_origin(anchor, building),
-		"visual_size": BuildingCatalog.get_visual_size(building),
+		"sprite_tile": BuildingCatalog.get_sprite_tile(anchor, building),
 		"ground_backup": backup,
 	}
 
@@ -325,12 +324,9 @@ func remove_building_at(tile: Vector2i) -> Dictionary:
 	var layer := building_layer
 	if data.get("place_layer", "building") == "ground":
 		layer = ground_layer
-	var place_origin: Vector2i = data.get("place_origin", anchor)
-	var visual_size: Vector2i = data.get("visual_size", Vector2i.ONE)
+	var sprite_tile: Vector2i = data.get("sprite_tile", anchor)
 	if layer:
-		for x in range(visual_size.x):
-			for y in range(visual_size.y):
-				layer.erase_cell(place_origin + Vector2i(x, y))
+		layer.erase_cell(sprite_tile)
 	return data
 
 

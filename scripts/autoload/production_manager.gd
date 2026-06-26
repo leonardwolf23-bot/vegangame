@@ -101,9 +101,7 @@ func refresh_all_world_positions() -> void:
 		var building: Dictionary = BuildingCatalog.get_building(building_index)
 		if building.is_empty():
 			continue
-		var foot_origin := BuildingCatalog.get_footprint_origin(anchor, building)
-		var footprint := BuildingCatalog.get_footprint(building)
-		var center_tile := foot_origin + Vector2i(footprint.x / 2, footprint.y / 2)
+		var center_tile := BuildingCatalog.get_block_center(anchor, building)
 		_buildings[key]["world_pos"] = _grid_manager.tile_to_world(center_tile)
 
 
@@ -118,9 +116,7 @@ func get_building_world_pos(anchor: Vector2i) -> Vector2:
 		var building_index: int = int(_buildings[key]["building_index"])
 		var building: Dictionary = BuildingCatalog.get_building(building_index)
 		if not building.is_empty():
-			var foot_origin := BuildingCatalog.get_footprint_origin(anchor, building)
-			var footprint := BuildingCatalog.get_footprint(building)
-			var center_tile := foot_origin + Vector2i(footprint.x / 2, footprint.y / 2)
+			var center_tile := BuildingCatalog.get_block_center(anchor, building)
 			pos = _grid_manager.tile_to_world(center_tile)
 			_buildings[key]["world_pos"] = pos
 			return pos
