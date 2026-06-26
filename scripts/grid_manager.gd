@@ -265,16 +265,11 @@ func can_place_building(anchor: Vector2i, building: Dictionary) -> bool:
 	return can_place(foot_origin, BuildingCatalog.get_footprint(building))
 
 
-func register_building(
-	anchor: Vector2i,
-	building_index: int,
-	building: Dictionary,
-	ground_backup: Dictionary = {},
-) -> void:
+func register_building(anchor: Vector2i, building_index: int, building: Dictionary) -> void:
 	var footprint: Vector2i = BuildingCatalog.get_footprint(building)
 	var foot_origin: Vector2i = BuildingCatalog.get_footprint_origin(anchor, building)
-	var backup := ground_backup
-	if backup.is_empty() and BuildingCatalog.is_road(building):
+	var backup: Dictionary = {}
+	if BuildingCatalog.is_road(building):
 		backup = _pending_ground_backup
 	_pending_ground_backup = {}
 
