@@ -13,7 +13,8 @@ extends Node2D
 @export var ghost_offset_tiles: Vector2 = Vector2(0, 0.5)
 
 var _grid: GridManager
-var _ghost: Sprite2D
+var _ghost_root: Node2D
+var _ghost_cells: Array[Sprite2D] = []
 var _build_mode_active: bool = false
 
 
@@ -32,23 +33,35 @@ func select_building(index: int) -> void:
 
 func set_build_mode(active: bool) -> void:
 	_build_mode_active = active
-	if not _build_mode_active and _ghost:
-		_ghost.visible = false
+	if not _build_mode_active:
+		_hide_ghost()
 
 
 func _setup_ghost() -> void:
-	_ghost = Sprite2D.new()
-	_ghost.modulate = Color(1, 1, 1, 0.5)
-	_ghost.visible = false
-	_ghost.z_index = 100
-	_ghost.y_sort_enabled = false
-	add_child(_ghost)
+	_ghost_root = Node2D.new()
+	_ghost_root.z_index = 100
+	add_child(_ghost_root)
+
+
+func _hide_ghost() -> void:
+	for cell in _ghost_cells:
+		cell.visible = false
+
+
+func _ensure_ghost_cells(count: int) -> void:
+	while _ghost_cells.size() < count:
+		var sprite := Sprite2D.new()
+		sprite.modulate = Color(1, 1, 1, 0.5)
+		sprite.y_sort_enabled = false
+		_ghost_root.add_child(sprite)
+		_ghost_cells.append(sprite)
+	for i in _ghost_cells.size():
+		_ghost_cells[i].visible = i < count
 
 
 func _process(_delta: float) -> void:
 	if not _build_mode_active:
-		if _ghost:
-			_ghost.visible = false
+		_hide_ghost()
 		return
 	_update_ghost()
 
@@ -90,28 +103,41 @@ func _can_place_building(tile: Vector2i, building: Dictionary) -> bool:
 func _update_ghost() -> void:
 	var building: Dictionary = BuildingCatalog.get_building(selected_building_index)
 	if building.is_empty():
-		_ghost.visible = false
+		_hide_ghost()
 		return
 
 	var layer: TileMapLayer = _grid.get_place_layer(building)
 	if not layer or not layer.tile_set:
-		_ghost.visible = false
+		_hide_ghost()
 		return
 
 	var anchor: Vector2i = _get_placement_tile()
 	var can_place: bool = _can_place_building(anchor, building)
-	var visual_tile := BuildingCatalog.get_visual_tile(anchor, building)
-
-	_ghost.global_position = _grid.tile_to_world(visual_tile) + _get_ghost_offset()
-	_ghost.visible = true
-	_ghost.modulate = Color(0.3, 1.0, 0.3, 0.5) if can_place else Color(1.0, 0.3, 0.3, 0.5)
+	var place_origin := BuildingCatalog.get_place_origin(anchor, building)
+	var size: Vector2i = building.get("size", Vector2i.ONE)
+	var tint := Color(0.3, 1.0, 0.3, 0.5) if can_place else Color(1.0, 0.3, 0.3, 0.5)
 
 	var tile_data = layer.tile_set.get_source(building["source_id"])
-	if tile_data is TileSetAtlasSource:
-		var atlas: TileSetAtlasSource = tile_data
-		_ghost.texture = atlas.texture
-		_ghost.region_enabled = true
-		_ghost.region_rect = atlas.get_tile_texture_region(building["atlas_coords"])
+	if not tile_data is TileSetAtlasSource:
+		_hide_ghost()
+		return
+
+	var atlas: TileSetAtlasSource = tile_data
+	var region := atlas.get_tile_texture_region(building["atlas_coords"])
+	var ghost_offset := _get_ghost_offset()
+
+	_ensure_ghost_cells(size.x * size.y)
+	var index := 0
+	for x in range(size.x):
+		for y in range(size.y):
+			var cell: Vector2i = place_origin + Vector2i(x, y)
+			var sprite := _ghost_cells[index]
+			sprite.global_position = _grid.tile_to_world(cell) + ghost_offset
+			sprite.texture = atlas.texture
+			sprite.region_enabled = true
+			sprite.region_rect = region
+			sprite.modulate = tint
+			index += 1
 
 
 func _place_building(origin: Vector2i) -> void:
@@ -131,16 +157,13 @@ func _place_building(origin: Vector2i) -> void:
 	if not layer:
 		return
 
-	var visual_tile := BuildingCatalog.get_visual_tile(origin, building)
+	var place_origin := BuildingCatalog.get_place_origin(origin, building)
 	var size: Vector2i = building.get("size", Vector2i.ONE)
 
-	if size == Vector2i.ONE:
-		layer.set_cell(visual_tile, building["source_id"], building["atlas_coords"])
-	else:
-		for x in range(size.x):
-			for y in range(size.y):
-				var cell: Vector2i = visual_tile + Vector2i(x, y)
-				layer.set_cell(cell, building["source_id"], building["atlas_coords"])
+	for x in range(size.x):
+		for y in range(size.y):
+			var cell: Vector2i = place_origin + Vector2i(x, y)
+			layer.set_cell(cell, building["source_id"], building["atlas_coords"])
 
 	_grid.register_building(origin, building_index, building)
 	if BuildingCatalog.is_road(building):

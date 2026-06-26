@@ -10,10 +10,9 @@ const BUILDINGS: Array[Dictionary] = [
 		"place_layer": "ground",
 		"source_id": 0,
 		"atlas_coords": Vector2i(0, 0),
-		"size": Vector2i(1, 1),
+		"size": Vector2i(4, 4),
 		"footprint": Vector2i(4, 4),
 		"footprint_offset": Vector2i.ZERO,
-		"visual_offset": Vector2i(1, 1),
 		"snap_grid": 4,
 		"cost": 15,
 	},
@@ -285,9 +284,9 @@ func get_footprint_origin(anchor: Vector2i, building: Dictionary) -> Vector2i:
 	return anchor + get_footprint_offset(building)
 
 
-func get_visual_tile(anchor: Vector2i, building: Dictionary) -> Vector2i:
-	if building.has("visual_offset"):
-		return get_footprint_origin(anchor, building) + building["visual_offset"]
+func get_place_origin(anchor: Vector2i, building: Dictionary) -> Vector2i:
+	if is_road(building):
+		return get_footprint_origin(anchor, building)
 	return anchor
 
 

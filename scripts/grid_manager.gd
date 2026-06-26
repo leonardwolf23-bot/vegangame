@@ -176,7 +176,8 @@ func register_building(anchor: Vector2i, building_index: int, building: Dictiona
 		"income": BuildingCatalog.get_income(building),
 		"kind": building.get("kind", "building"),
 		"place_layer": building.get("place_layer", "building"),
-		"visual_tile": BuildingCatalog.get_visual_tile(anchor, building),
+		"place_origin": BuildingCatalog.get_place_origin(anchor, building),
+		"visual_size": building.get("size", Vector2i.ONE),
 	}
 
 	for x in range(footprint.x):
@@ -204,7 +205,10 @@ func remove_building_at(tile: Vector2i) -> Dictionary:
 	var layer := building_layer
 	if data.get("place_layer", "building") == "ground":
 		layer = ground_layer
-	var visual_tile: Vector2i = data.get("visual_tile", anchor)
+	var place_origin: Vector2i = data.get("place_origin", anchor)
+	var visual_size: Vector2i = data.get("visual_size", Vector2i.ONE)
 	if layer:
-		layer.erase_cell(visual_tile)
+		for x in range(visual_size.x):
+			for y in range(visual_size.y):
+				layer.erase_cell(place_origin + Vector2i(x, y))
 	return data
