@@ -9,6 +9,7 @@ extends Node
 
 var _placed: Dictionary = {}
 var _cell_owner: Dictionary = {}
+var _pending_ground_backup: Dictionary = {}
 
 const _CARDINAL_DIRS: Array[Vector2i] = [
 	Vector2i(1, 0),
@@ -264,14 +265,13 @@ func can_place_building(anchor: Vector2i, building: Dictionary) -> bool:
 	return can_place(foot_origin, BuildingCatalog.get_footprint(building))
 
 
-func register_building(
-	anchor: Vector2i,
-	building_index: int,
-	building: Dictionary,
-	ground_backup: Dictionary = {},
-) -> void:
+func register_building(anchor: Vector2i, building_index: int, building: Dictionary) -> void:
 	var footprint: Vector2i = BuildingCatalog.get_footprint(building)
 	var foot_origin: Vector2i = BuildingCatalog.get_footprint_origin(anchor, building)
+	var ground_backup: Dictionary = {}
+	if BuildingCatalog.is_road(building):
+		ground_backup = _pending_ground_backup
+		_pending_ground_backup = {}
 
 	_placed[anchor] = {
 		"anchor": anchor,
@@ -331,17 +331,16 @@ func place_ground_overlay(
 	size: Vector2i,
 	source_id: int,
 	atlas_coords: Vector2i,
-) -> Dictionary:
-	var backup: Dictionary = {}
+) -> void:
+	_pending_ground_backup = {}
 	if not ground_layer:
-		return backup
+		return
 
 	for x in range(size.x):
 		for y in range(size.y):
 			var cell := place_origin + Vector2i(x, y)
-			backup[cell] = _snapshot_ground_cell(cell)
+			_pending_ground_backup[cell] = _snapshot_ground_cell(cell)
 			ground_layer.set_cell(cell, source_id, atlas_coords)
-	return backup
 
 
 func restore_ground_tiles(backup: Dictionary) -> void:
