@@ -264,7 +264,12 @@ func can_place_building(anchor: Vector2i, building: Dictionary) -> bool:
 	return can_place(foot_origin, BuildingCatalog.get_footprint(building))
 
 
-func register_building(anchor: Vector2i, building_index: int, building: Dictionary) -> void:
+func register_building(
+	anchor: Vector2i,
+	building_index: int,
+	building: Dictionary,
+	ground_backup: Dictionary = {},
+) -> void:
 	var footprint: Vector2i = BuildingCatalog.get_footprint(building)
 	var foot_origin: Vector2i = BuildingCatalog.get_footprint_origin(anchor, building)
 
@@ -279,6 +284,7 @@ func register_building(anchor: Vector2i, building_index: int, building: Dictiona
 		"place_layer": building.get("place_layer", "building"),
 		"place_origin": BuildingCatalog.get_place_origin(anchor, building),
 		"visual_size": building.get("size", Vector2i.ONE),
+		"ground_backup": ground_backup,
 	}
 
 	for x in range(footprint.x):
@@ -303,6 +309,11 @@ func remove_building_at(tile: Vector2i) -> Dictionary:
 			_cell_owner.erase(foot_origin + Vector2i(x, y))
 	_placed.erase(anchor)
 
+	var ground_backup: Dictionary = data.get("ground_backup", {})
+	if not ground_backup.is_empty():
+		restore_ground_tiles(ground_backup)
+		return data
+
 	var layer := building_layer
 	if data.get("place_layer", "building") == "ground":
 		layer = ground_layer
@@ -313,3 +324,56 @@ func remove_building_at(tile: Vector2i) -> Dictionary:
 			for y in range(visual_size.y):
 				layer.erase_cell(place_origin + Vector2i(x, y))
 	return data
+
+
+func place_ground_overlay(
+	place_origin: Vector2i,
+	size: Vector2i,
+	source_id: int,
+	atlas_coords: Vector2i,
+) -> Dictionary:
+	var backup: Dictionary = {}
+	if not ground_layer:
+		return backup
+
+	for x in range(size.x):
+		for y in range(size.y):
+			var cell := place_origin + Vector2i(x, y)
+			backup[cell] = _snapshot_ground_cell(cell)
+			ground_layer.set_cell(cell, source_id, atlas_coords)
+	return backup
+
+
+func restore_ground_tiles(backup: Dictionary) -> void:
+	if not ground_layer:
+		return
+	for cell_variant in backup.keys():
+		var cell: Vector2i = cell_variant
+		_restore_ground_cell(cell, backup[cell_variant])
+
+
+func _snapshot_ground_cell(cell: Vector2i) -> Dictionary:
+	if not ground_layer:
+		return {}
+	var source_id := ground_layer.get_cell_source_id(cell)
+	if source_id == -1:
+		return {}
+	return {
+		"source_id": source_id,
+		"atlas_coords": ground_layer.get_cell_atlas_coords(cell),
+		"alternative_tile": ground_layer.get_cell_alternative_tile(cell),
+	}
+
+
+func _restore_ground_cell(cell: Vector2i, data: Dictionary) -> void:
+	if not ground_layer:
+		return
+	if data.is_empty() or int(data.get("source_id", -1)) == -1:
+		ground_layer.erase_cell(cell)
+		return
+	ground_layer.set_cell(
+		cell,
+		int(data["source_id"]),
+		data["atlas_coords"],
+		int(data.get("alternative_tile", 0)),
+	)

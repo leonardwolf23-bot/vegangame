@@ -157,19 +157,27 @@ func _place_building(origin: Vector2i) -> void:
 	if not GameState.spend(cost):
 		return
 
-	var layer: TileMapLayer = _grid.get_place_layer(building)
-	if not layer:
-		return
-
 	var place_origin := BuildingCatalog.get_place_origin(origin, building)
 	var size: Vector2i = building.get("size", Vector2i.ONE)
+	var ground_backup: Dictionary = {}
 
-	for x in range(size.x):
-		for y in range(size.y):
-			var cell: Vector2i = place_origin + Vector2i(x, y)
-			layer.set_cell(cell, building["source_id"], building["atlas_coords"])
+	if BuildingCatalog.is_road(building):
+		ground_backup = _grid.place_ground_overlay(
+			place_origin,
+			size,
+			building["source_id"],
+			building["atlas_coords"],
+		)
+	else:
+		var layer: TileMapLayer = _grid.get_place_layer(building)
+		if not layer:
+			return
+		for x in range(size.x):
+			for y in range(size.y):
+				var cell: Vector2i = place_origin + Vector2i(x, y)
+				layer.set_cell(cell, building["source_id"], building["atlas_coords"])
 
-	_grid.register_building(origin, building_index, building)
+	_grid.register_building(origin, building_index, building, ground_backup)
 	if BuildingCatalog.is_road(building):
 		return
 	if not BuildingCatalog.is_housing(building):
