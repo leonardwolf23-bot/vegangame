@@ -331,16 +331,17 @@ func place_ground_overlay(
 	size: Vector2i,
 	source_id: int,
 	atlas_coords: Vector2i,
-) -> void:
+) -> Dictionary:
 	_pending_ground_backup = {}
 	if not ground_layer:
-		return
+		return {}
 
 	for x in range(size.x):
 		for y in range(size.y):
 			var cell := place_origin + Vector2i(x, y)
 			_pending_ground_backup[cell] = _snapshot_ground_cell(cell)
 			ground_layer.set_cell(cell, source_id, atlas_coords)
+	return _pending_ground_backup
 
 
 func restore_ground_tiles(backup: Dictionary) -> void:
