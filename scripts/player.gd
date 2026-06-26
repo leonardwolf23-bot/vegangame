@@ -67,7 +67,16 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.button_index != MOUSE_BUTTON_LEFT:
 		return
 
-	_move_to_tile(_grid.world_to_tile_from_mouse())
+	var click_tile := _grid.world_to_tile_from_mouse()
+	var building_index := _grid.get_building_index_at(click_tile)
+	if building_index >= 0:
+		var building: Dictionary = BuildingCatalog.get_building(building_index)
+		if BuildingCatalog.is_interactive(building):
+			BuildingInteractionUI.open_building(building_index)
+			get_viewport().set_input_as_handled()
+			return
+
+	_move_to_tile(click_tile)
 	get_viewport().set_input_as_handled()
 
 

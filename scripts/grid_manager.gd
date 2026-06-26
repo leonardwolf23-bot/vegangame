@@ -273,6 +273,29 @@ func can_place_building(anchor: Vector2i, building: Dictionary) -> bool:
 	return can_place(block_origin, BuildingCatalog.get_footprint(building))
 
 
+func get_placed_building_at(tile: Vector2i) -> Dictionary:
+	if not _cell_owner.has(tile):
+		return {}
+	var anchor: Vector2i = _cell_owner[tile]
+	return _placed.get(anchor, {})
+
+
+func get_building_index_at(tile: Vector2i) -> int:
+	var data: Dictionary = get_placed_building_at(tile)
+	return int(data.get("building_index", -1))
+
+
+func count_buildings_by_id(building_id: String) -> int:
+	var target_index := BuildingCatalog.get_index_by_id(building_id)
+	if target_index < 0:
+		return 0
+	var count := 0
+	for anchor in _placed:
+		if int(_placed[anchor].get("building_index", -1)) == target_index:
+			count += 1
+	return count
+
+
 func register_building(anchor: Vector2i, building_index: int, building: Dictionary) -> void:
 	var footprint: Vector2i = BuildingCatalog.get_footprint(building)
 	var block_origin: Vector2i = BuildingCatalog.get_block_origin(anchor)

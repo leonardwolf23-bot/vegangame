@@ -195,9 +195,37 @@ func _place_building(anchor: Vector2i) -> void:
 
 	if BuildingCatalog.is_housing(building):
 		GameState.register_housing(BuildingCatalog.get_income(building))
+	PopulationHealth.refresh_markers()
+
+
+func place_starter_building(building_id: String, anchor: Vector2i) -> bool:
+	var building_index := BuildingCatalog.get_index_by_id(building_id)
+	if building_index < 0:
+		return false
+	var building: Dictionary = BuildingCatalog.get_building(building_index)
+	if building.is_empty():
+		return false
+	if not _grid.can_place_building(anchor, building):
+		return false
+
+	var layer: TileMapLayer = _grid.get_place_layer(building)
+	if not layer:
+		return false
+
+	var sprite_tile := BuildingCatalog.get_sprite_tile(anchor, building)
+	layer.set_cell(sprite_tile, building["source_id"], building["atlas_coords"])
+	_grid.register_building(anchor, building_index, building)
+	PopulationHealth.refresh_markers()
+	return true
 
 
 func _sell_building(tile: Vector2i) -> void:
+	var building_index := _grid.get_building_index_at(tile)
+	if building_index >= 0:
+		var blocked: Dictionary = BuildingCatalog.get_building(building_index)
+		if bool(blocked.get("starter_only", false)):
+			return
+
 	var data: Dictionary = _grid.remove_building_at(tile)
 	if data.is_empty():
 		return
@@ -214,6 +242,7 @@ func _sell_building(tile: Vector2i) -> void:
 	var refund: int = int(cost * sell_refund_factor)
 	if refund > 0:
 		GameState.add_money(refund)
+	PopulationHealth.refresh_markers()
 
 
 func _get_ghost_offset() -> Vector2:

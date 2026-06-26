@@ -43,6 +43,9 @@ const DISPLAY_NAMES: Dictionary = {
 	"cappuccino_hafer": "Cappuccino (Hafer)",
 	"cappuccino_soja": "Cappuccino (Soja)",
 	"kakao_hafermilch": "Kakao (Hafermilch)",
+	"vitamin_b12": "Vitamin B12 (Tabletten)",
+	"vitamin_d": "Vitamin D (Tabletten)",
+	"mental_wellness": "Mentale Auszeit",
 }
 
 ## Fertige Speisen — werden ans Gasthaus geliefert (Wert = Essens-Einheiten).

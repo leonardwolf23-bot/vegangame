@@ -238,12 +238,16 @@ const BUILDINGS: Array[Dictionary] = [
 		"id": "supermarkt",
 		"name": "Supermarkt",
 		"kind": "service",
-		"description": "Platzhalter — Einkaufen kommt später.",
+		"description": "Vitamin B12 und Vitamin D kaufen.",
 		"source_id": 14,
 		"atlas_coords": Vector2i(0, 0),
 		"footprint": Vector2i(4, 4),
 		"sprite_cell": Vector2i(0, 0),
 		"cost": 400,
+		"shop_items": [
+			{"id": "vitamin_b12", "label": "Vitamin B12 Tabletten", "cost": 25, "amount": 5.0},
+			{"id": "vitamin_d", "label": "Vitamin D Tabletten", "cost": 30, "amount": 5.0},
+		],
 	},
 	{
 		"id": "vegcafe",
@@ -288,6 +292,42 @@ const BUILDINGS: Array[Dictionary] = [
 		],
 		"default_modes": ["latte_macchiato_hafer"],
 	},
+	{
+		"id": "rathaus",
+		"name": "Rathaus",
+		"kind": "civic",
+		"description": "Startgebäude — hier kann man Bücher lesen für mentale Gesundheit.",
+		"source_id": 16,
+		"atlas_coords": Vector2i(0, 0),
+		"footprint": Vector2i(4, 4),
+		"sprite_cell": Vector2i(0, 0),
+		"cost": 0,
+		"starter_only": true,
+	},
+	{
+		"id": "stadtpark",
+		"name": "Stadtpark",
+		"kind": "wellness",
+		"description": "Schöner Park — stärkt die mentale Gesundheit der Bürger.",
+		"wellness_type": "mental",
+		"source_id": 17,
+		"atlas_coords": Vector2i(0, 0),
+		"footprint": Vector2i(4, 4),
+		"sprite_cell": Vector2i(0, 0),
+		"cost": 350,
+	},
+	{
+		"id": "freizeitpark",
+		"name": "Freizeitpark",
+		"kind": "wellness",
+		"description": "Sonnen und Bewegung — verbessert die Vitamin-D-Versorgung.",
+		"wellness_type": "vitamin_d",
+		"source_id": 18,
+		"atlas_coords": Vector2i(0, 0),
+		"footprint": Vector2i(4, 4),
+		"sprite_cell": Vector2i(0, 0),
+		"cost": 380,
+	},
 ]
 
 
@@ -295,6 +335,45 @@ func get_building(index: int) -> Dictionary:
 	if index < 0 or index >= BUILDINGS.size():
 		return {}
 	return BUILDINGS[index]
+
+
+func get_index_by_id(building_id: String) -> int:
+	for i in BUILDINGS.size():
+		if str(BUILDINGS[i].get("id", "")) == building_id:
+			return i
+	return -1
+
+
+func get_building_by_id(building_id: String) -> Dictionary:
+	var index := get_index_by_id(building_id)
+	if index < 0:
+		return {}
+	return get_building(index)
+
+
+func is_buildable(building: Dictionary) -> bool:
+	return not bool(building.get("starter_only", false))
+
+
+func is_interactive(building: Dictionary) -> bool:
+	var kind: String = building.get("kind", "")
+	if kind in ["service", "civic"]:
+		return true
+	if kind == "wellness":
+		return true
+	return false
+
+
+func is_civic(building: Dictionary) -> bool:
+	return building.get("kind", "") == "civic"
+
+
+func is_wellness(building: Dictionary) -> bool:
+	return building.get("kind", "") == "wellness"
+
+
+func get_shop_items(building: Dictionary) -> Array:
+	return building.get("shop_items", [])
 
 
 func get_count() -> int:
@@ -327,6 +406,8 @@ func is_service(building: Dictionary) -> bool:
 
 func needs_production_manager(building: Dictionary) -> bool:
 	if is_housing(building) or is_road(building) or is_service(building):
+		return false
+	if is_civic(building) or is_wellness(building):
 		return false
 	return true
 
