@@ -27,7 +27,7 @@ const BUILDINGS: Array[Dictionary] = [
 		"source_id": 0,
 		"atlas_coords": Vector2i(0, 0),
 		"footprint": Vector2i(3, 3),
-		"sprite_cell": Vector2i(1, 1),
+		"sprite_cell": Vector2i(0, 0),
 		"cost": 100,
 		"income": 5,
 	},
@@ -38,7 +38,7 @@ const BUILDINGS: Array[Dictionary] = [
 		"source_id": 1,
 		"atlas_coords": Vector2i(0, 0),
 		"footprint": Vector2i(3, 3),
-		"sprite_cell": Vector2i(1, 1),
+		"sprite_cell": Vector2i(0, 0),
 		"cost": 120,
 		"outputs_per_day": {"holz": 15.0},
 	},
@@ -49,7 +49,7 @@ const BUILDINGS: Array[Dictionary] = [
 		"source_id": 2,
 		"atlas_coords": Vector2i(0, 0),
 		"footprint": Vector2i(3, 3),
-		"sprite_cell": Vector2i(1, 1),
+		"sprite_cell": Vector2i(0, 0),
 		"cost": 120,
 		"outputs_per_day": {"stein": 12.0},
 	},
@@ -60,7 +60,7 @@ const BUILDINGS: Array[Dictionary] = [
 		"source_id": 3,
 		"atlas_coords": Vector2i(0, 0),
 		"footprint": Vector2i(3, 3),
-		"sprite_cell": Vector2i(1, 1),
+		"sprite_cell": Vector2i(0, 0),
 		"cost": 200,
 		"skip_water_upkeep": true,
 		"outputs_per_day": {"wasser": 500.0},
@@ -72,7 +72,7 @@ const BUILDINGS: Array[Dictionary] = [
 		"source_id": 4,
 		"atlas_coords": Vector2i(0, 0),
 		"footprint": Vector2i(3, 3),
-		"sprite_cell": Vector2i(1, 1),
+		"sprite_cell": Vector2i(0, 0),
 		"cost": 250,
 		"modes": [
 			{"id": "weizen", "label": "Weizen", "outputs_per_day": {"weizen": 10.0}},
@@ -90,7 +90,7 @@ const BUILDINGS: Array[Dictionary] = [
 		"source_id": 5,
 		"atlas_coords": Vector2i(0, 0),
 		"footprint": Vector2i(3, 3),
-		"sprite_cell": Vector2i(1, 1),
+		"sprite_cell": Vector2i(0, 0),
 		"cost": 300,
 		"modes": [
 			{"id": "cashewkerne", "label": "Cashewkerne", "outputs_per_day": {"cashewkerne": 6.0}},
@@ -107,7 +107,7 @@ const BUILDINGS: Array[Dictionary] = [
 		"source_id": 6,
 		"atlas_coords": Vector2i(0, 0),
 		"footprint": Vector2i(3, 3),
-		"sprite_cell": Vector2i(1, 1),
+		"sprite_cell": Vector2i(0, 0),
 		"cost": 350,
 		"recipes": [
 			{"id": "sojamilch", "label": "Sojamilch", "inputs": {"sojabohnen": 5.0}, "outputs": {"sojamilch": 5.0}},
@@ -123,7 +123,7 @@ const BUILDINGS: Array[Dictionary] = [
 		"source_id": 7,
 		"atlas_coords": Vector2i(0, 0),
 		"footprint": Vector2i(3, 3),
-		"sprite_cell": Vector2i(1, 1),
+		"sprite_cell": Vector2i(0, 0),
 		"cost": 280,
 		"recipes": [
 			{"id": "weizenmehl", "label": "Weizenmehl", "inputs": {"weizen": 5.0}, "outputs": {"weizenmehl": 5.0}},
@@ -138,7 +138,7 @@ const BUILDINGS: Array[Dictionary] = [
 		"source_id": 8,
 		"atlas_coords": Vector2i(0, 0),
 		"footprint": Vector2i(3, 3),
-		"sprite_cell": Vector2i(1, 1),
+		"sprite_cell": Vector2i(0, 0),
 		"cost": 260,
 		"recipes": [
 			{"id": "broetchen", "label": "Brötchen", "inputs": {"weizenmehl": 3.0}, "outputs": {"broetchen": 5.0}},
@@ -153,7 +153,7 @@ const BUILDINGS: Array[Dictionary] = [
 		"source_id": 9,
 		"atlas_coords": Vector2i(0, 0),
 		"footprint": Vector2i(3, 3),
-		"sprite_cell": Vector2i(1, 1),
+		"sprite_cell": Vector2i(0, 0),
 		"cost": 320,
 		"recipes": [
 			{
@@ -178,7 +178,7 @@ const BUILDINGS: Array[Dictionary] = [
 		"source_id": 10,
 		"atlas_coords": Vector2i(0, 0),
 		"footprint": Vector2i(3, 3),
-		"sprite_cell": Vector2i(1, 1),
+		"sprite_cell": Vector2i(0, 0),
 		"cost": 300,
 		"recipes": [
 			{"id": "pommes", "label": "Pommes", "inputs": {"kartoffeln": 4.0}, "outputs": {"pommes": 6.0}},
@@ -194,7 +194,7 @@ const BUILDINGS: Array[Dictionary] = [
 		"source_id": 11,
 		"atlas_coords": Vector2i(0, 0),
 		"footprint": Vector2i(3, 3),
-		"sprite_cell": Vector2i(1, 1),
+		"sprite_cell": Vector2i(0, 0),
 		"cost": 340,
 		"recipes": [
 			{"id": "kaese", "label": "Väse (Käse)", "inputs": {"cashewkerne": 4.0}, "outputs": {"kaese": 3.0}},
@@ -283,7 +283,7 @@ func get_sprite_cell(building: Dictionary) -> Vector2i:
 		return Vector2i.ZERO
 	if building.has("sprite_cell"):
 		return building["sprite_cell"] as Vector2i
-	return Vector2i(1, 1)
+	return Vector2i.ZERO
 
 
 func get_sprite_tile(anchor: Vector2i, building: Dictionary) -> Vector2i:

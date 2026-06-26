@@ -118,7 +118,6 @@ func _update_ghost() -> void:
 	var can_place: bool = _can_place_building(anchor, building)
 	var block_origin: Vector2i = BuildingCatalog.get_block_origin(anchor)
 	var footprint: Vector2i = BuildingCatalog.get_footprint(building)
-	var sprite_cell: Vector2i = BuildingCatalog.get_sprite_cell(building)
 	var is_road := BuildingCatalog.is_road(building)
 
 	var tile_data = layer.tile_set.get_source(building["source_id"])
@@ -130,27 +129,30 @@ func _update_ghost() -> void:
 	var region := atlas.get_tile_texture_region(building["atlas_coords"])
 	var ok_tint := Color(0.35, 1.0, 0.45, 0.55)
 	var bad_tint := Color(1.0, 0.35, 0.35, 0.55)
-	var footprint_tint := Color(0.4, 0.85, 1.0, footprint_preview_alpha)
-	if not can_place:
-		footprint_tint = Color(1.0, 0.4, 0.4, footprint_preview_alpha)
 
-	_ensure_ghost_cells(footprint.x * footprint.y)
-	var index := 0
-	for y in range(footprint.y):
-		for x in range(footprint.x):
-			var cell := block_origin + Vector2i(x, y)
-			var sprite := _ghost_cells[index]
-			sprite.global_position = _grid.tile_to_world(cell)
-			sprite.texture = atlas.texture
-			sprite.region_enabled = true
-			sprite.region_rect = region
-
-			var is_sprite_cell := is_road or Vector2i(x, y) == sprite_cell
-			if is_sprite_cell:
+	if is_road:
+		_ensure_ghost_cells(footprint.x * footprint.y)
+		var index := 0
+		for y in range(footprint.y):
+			for x in range(footprint.x):
+				var cell := block_origin + Vector2i(x, y)
+				var sprite := _ghost_cells[index]
+				sprite.global_position = _grid.tile_to_world(cell)
+				sprite.texture = atlas.texture
+				sprite.region_enabled = true
+				sprite.region_rect = region
 				sprite.modulate = ok_tint if can_place else bad_tint
-			else:
-				sprite.modulate = footprint_tint
-			index += 1
+				index += 1
+		return
+
+	var sprite_tile := BuildingCatalog.get_sprite_tile(anchor, building)
+	_ensure_ghost_cells(1)
+	var ghost := _ghost_cells[0]
+	ghost.global_position = _grid.tile_to_world(sprite_tile)
+	ghost.texture = atlas.texture
+	ghost.region_enabled = true
+	ghost.region_rect = region
+	ghost.modulate = ok_tint if can_place else bad_tint
 
 
 func _place_building(anchor: Vector2i) -> void:
