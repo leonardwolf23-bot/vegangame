@@ -117,8 +117,8 @@ func _update_ghost() -> void:
 
 	var anchor: Vector2i = _get_placement_tile()
 	var can_place: bool = _can_place_building(anchor, building)
-	var place_origin := BuildingCatalog.get_place_origin(anchor, building)
-	var size: Vector2i = building.get("size", Vector2i.ONE)
+	var place_origin := BuildingCatalog.get_visual_origin(anchor, building)
+	var size: Vector2i = BuildingCatalog.get_visual_size(building)
 	var tint := Color(0.3, 1.0, 0.3, 0.5) if can_place else Color(1.0, 0.3, 0.3, 0.5)
 
 	var tile_data = layer.tile_set.get_source(building["source_id"])
@@ -157,8 +157,8 @@ func _place_building(origin: Vector2i) -> void:
 	if not GameState.spend(cost):
 		return
 
-	var place_origin := BuildingCatalog.get_place_origin(origin, building)
-	var size: Vector2i = building.get("size", Vector2i.ONE)
+	var place_origin := BuildingCatalog.get_visual_origin(origin, building)
+	var size: Vector2i = BuildingCatalog.get_visual_size(building)
 
 	if BuildingCatalog.is_road(building):
 		_grid.place_ground_overlay(

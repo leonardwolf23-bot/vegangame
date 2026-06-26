@@ -11,8 +11,8 @@ const BUILDINGS: Array[Dictionary] = [
 		"source_id": 0,
 		"atlas_coords": Vector2i(0, 0),
 		"size": Vector2i(4, 4),
+		"visual_offset": Vector2i(0, -2),
 		"footprint": Vector2i(4, 4),
-		## Versatz nach dem 4er-Snap: (0, -2) = Block startet 2 Tiles nordwärts.
 		"footprint_offset": Vector2i(0, -2),
 		"snap_grid": 4,
 		"cost": 15,
@@ -281,14 +281,28 @@ func get_footprint_offset(building: Dictionary) -> Vector2i:
 	return building.get("footprint_offset", Vector2i.ZERO)
 
 
+func get_visual_size(building: Dictionary) -> Vector2i:
+	return building.get("size", Vector2i.ONE)
+
+
+func get_visual_origin(anchor: Vector2i, building: Dictionary) -> Vector2i:
+	if building.has("visual_offset"):
+		return anchor + building["visual_offset"]
+	return anchor
+
+
 func get_footprint_origin(anchor: Vector2i, building: Dictionary) -> Vector2i:
 	return anchor + get_footprint_offset(building)
 
 
 func get_place_origin(anchor: Vector2i, building: Dictionary) -> Vector2i:
 	if is_road(building):
-		return get_footprint_origin(anchor, building)
+		return get_visual_origin(anchor, building)
 	return anchor
+
+
+func get_blocking_origin(anchor: Vector2i, building: Dictionary) -> Vector2i:
+	return get_footprint_origin(anchor, building)
 
 
 func snap_placement_anchor(anchor: Vector2i, building: Dictionary) -> Vector2i:

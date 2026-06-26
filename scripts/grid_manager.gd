@@ -242,7 +242,15 @@ func has_ground(tile: Vector2i) -> bool:
 
 
 func is_building_slot_free(tile: Vector2i) -> bool:
-	if _cell_owner.has(tile):
+	return not is_cell_blocked(tile)
+
+
+func is_cell_blocked(tile: Vector2i) -> bool:
+	return _cell_owner.has(tile)
+
+
+func is_building_layer_free(tile: Vector2i) -> bool:
+	if is_cell_blocked(tile):
 		return false
 	if not building_layer:
 		return false
@@ -255,19 +263,19 @@ func can_place(origin: Vector2i, size: Vector2i) -> bool:
 			var cell := origin + Vector2i(x, y)
 			if not has_ground(cell):
 				return false
-			if not is_building_slot_free(cell):
+			if not is_building_layer_free(cell):
 				return false
 	return true
 
 
 func can_place_building(anchor: Vector2i, building: Dictionary) -> bool:
-	var foot_origin := BuildingCatalog.get_footprint_origin(anchor, building)
-	return can_place(foot_origin, BuildingCatalog.get_footprint(building))
+	var block_origin := BuildingCatalog.get_blocking_origin(anchor, building)
+	return can_place(block_origin, BuildingCatalog.get_footprint(building))
 
 
 func register_building(anchor: Vector2i, building_index: int, building: Dictionary) -> void:
 	var footprint: Vector2i = BuildingCatalog.get_footprint(building)
-	var foot_origin: Vector2i = BuildingCatalog.get_footprint_origin(anchor, building)
+	var block_origin: Vector2i = BuildingCatalog.get_blocking_origin(anchor, building)
 	var backup: Dictionary = {}
 	if BuildingCatalog.is_road(building):
 		backup = _pending_ground_backup
@@ -276,20 +284,20 @@ func register_building(anchor: Vector2i, building_index: int, building: Dictiona
 	_placed[anchor] = {
 		"anchor": anchor,
 		"footprint": footprint,
-		"foot_origin": foot_origin,
+		"foot_origin": block_origin,
 		"building_index": building_index,
 		"cost": BuildingCatalog.get_cost(building),
 		"income": BuildingCatalog.get_income(building),
 		"kind": building.get("kind", "building"),
 		"place_layer": building.get("place_layer", "building"),
-		"place_origin": BuildingCatalog.get_place_origin(anchor, building),
-		"visual_size": building.get("size", Vector2i.ONE),
+		"place_origin": BuildingCatalog.get_visual_origin(anchor, building),
+		"visual_size": BuildingCatalog.get_visual_size(building),
 		"ground_backup": backup,
 	}
 
 	for x in range(footprint.x):
 		for y in range(footprint.y):
-			_cell_owner[foot_origin + Vector2i(x, y)] = anchor
+			_cell_owner[block_origin + Vector2i(x, y)] = anchor
 
 
 func remove_building_at(tile: Vector2i) -> Dictionary:
