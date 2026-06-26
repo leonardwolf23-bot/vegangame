@@ -265,13 +265,18 @@ func can_place_building(anchor: Vector2i, building: Dictionary) -> bool:
 	return can_place(foot_origin, BuildingCatalog.get_footprint(building))
 
 
-func register_building(anchor: Vector2i, building_index: int, building: Dictionary) -> void:
+func register_building(
+	anchor: Vector2i,
+	building_index: int,
+	building: Dictionary,
+	ground_backup: Dictionary = {},
+) -> void:
 	var footprint: Vector2i = BuildingCatalog.get_footprint(building)
 	var foot_origin: Vector2i = BuildingCatalog.get_footprint_origin(anchor, building)
-	var ground_backup: Dictionary = {}
-	if BuildingCatalog.is_road(building):
-		ground_backup = _pending_ground_backup
-		_pending_ground_backup = {}
+	var backup := ground_backup
+	if backup.is_empty() and BuildingCatalog.is_road(building):
+		backup = _pending_ground_backup
+	_pending_ground_backup = {}
 
 	_placed[anchor] = {
 		"anchor": anchor,
@@ -284,7 +289,7 @@ func register_building(anchor: Vector2i, building_index: int, building: Dictiona
 		"place_layer": building.get("place_layer", "building"),
 		"place_origin": BuildingCatalog.get_place_origin(anchor, building),
 		"visual_size": building.get("size", Vector2i.ONE),
-		"ground_backup": ground_backup,
+		"ground_backup": backup,
 	}
 
 	for x in range(footprint.x):
