@@ -43,15 +43,15 @@ const BUILDINGS: Array[Dictionary] = [
 		"outputs_per_day": {"holz": 15.0},
 	},
 	{
-		"id": "steinmetz",
-		"name": "Steinmetz",
+		"id": "betonwerk",
+		"name": "Betonwerk",
 		"kind": "extractor",
 		"source_id": 2,
 		"atlas_coords": Vector2i(0, 0),
 		"footprint": Vector2i(3, 3),
 		"sprite_cell": Vector2i(0, 0),
 		"cost": 120,
-		"outputs_per_day": {"stein": 12.0},
+		"outputs_per_day": {"beton": 12.0},
 	},
 	{
 		"id": "wasserwerk",
@@ -97,12 +97,13 @@ const BUILDINGS: Array[Dictionary] = [
 			{"id": "avocados", "label": "Avocados", "outputs_per_day": {"avocados": 6.0}},
 			{"id": "tomaten", "label": "Tomaten", "outputs_per_day": {"tomaten": 6.0}},
 			{"id": "eisbergsalat", "label": "Eisbergsalat", "outputs_per_day": {"eisbergsalat": 6.0}},
+			{"id": "kakaobohnen", "label": "Kakaobohnen", "outputs_per_day": {"kakaobohnen": 5.0}},
 		],
 		"default_modes": ["tomaten"],
 	},
 	{
 		"id": "all_pro",
-		"name": "All Pro",
+		"name": "All Pro Fabrik",
 		"kind": "processor",
 		"source_id": 6,
 		"atlas_coords": Vector2i(0, 0),
@@ -201,6 +202,92 @@ const BUILDINGS: Array[Dictionary] = [
 		],
 		"default_modes": ["kaese"],
 	},
+	{
+		"id": "gasthaus",
+		"name": "Gasthaus",
+		"kind": "inn",
+		"description": "Zentrale Essensversorgung — Bürger liefern fertiges Essen aus der Stadt an.",
+		"source_id": 12,
+		"atlas_coords": Vector2i(0, 0),
+		"footprint": Vector2i(4, 4),
+		"sprite_cell": Vector2i(0, 0),
+		"cost": 320,
+	},
+	{
+		"id": "doenermann",
+		"name": "Dönermann",
+		"kind": "processor",
+		"source_id": 13,
+		"atlas_coords": Vector2i(0, 0),
+		"footprint": Vector2i(3, 3),
+		"sprite_cell": Vector2i(0, 0),
+		"cost": 300,
+		"recipes": [
+			{
+				"id": "seitandoener",
+				"label": "Seitandöner",
+				"inputs": {"seitansteaks": 2.0, "eisbergsalat": 1.0, "tomaten": 1.0},
+				"outputs": {"seitandoener": 4.0},
+			},
+			{"id": "hummus", "label": "Hummus", "inputs": {"kichererbsen": 3.0, "tomaten": 1.0}, "outputs": {"hummus": 4.0}},
+			{"id": "pommes", "label": "Pommes", "inputs": {"kartoffeln": 4.0}, "outputs": {"pommes": 6.0}},
+		],
+		"default_modes": ["seitandoener"],
+	},
+	{
+		"id": "supermarkt",
+		"name": "Supermarkt",
+		"kind": "service",
+		"description": "Platzhalter — Einkaufen kommt später.",
+		"source_id": 14,
+		"atlas_coords": Vector2i(0, 0),
+		"footprint": Vector2i(4, 4),
+		"sprite_cell": Vector2i(0, 0),
+		"cost": 400,
+	},
+	{
+		"id": "vegcafe",
+		"name": "VegCafe",
+		"kind": "processor",
+		"source_id": 15,
+		"atlas_coords": Vector2i(0, 0),
+		"footprint": Vector2i(3, 3),
+		"sprite_cell": Vector2i(0, 0),
+		"cost": 280,
+		"recipes": [
+			{
+				"id": "latte_macchiato_hafer",
+				"label": "Latte Macchiato (Hafermilch)",
+				"inputs": {"hafermilch": 2.0},
+				"outputs": {"latte_macchiato_hafer": 3.0},
+			},
+			{
+				"id": "latte_macchiato_soja",
+				"label": "Latte Macchiato (Sojamilch)",
+				"inputs": {"sojamilch": 2.0},
+				"outputs": {"latte_macchiato_soja": 3.0},
+			},
+			{
+				"id": "cappuccino_hafer",
+				"label": "Cappuccino (Hafermilch)",
+				"inputs": {"hafermilch": 2.0},
+				"outputs": {"cappuccino_hafer": 3.0},
+			},
+			{
+				"id": "cappuccino_soja",
+				"label": "Cappuccino (Sojamilch)",
+				"inputs": {"sojamilch": 2.0},
+				"outputs": {"cappuccino_soja": 3.0},
+			},
+			{
+				"id": "kakao_hafer",
+				"label": "Kakao (Hafermilch)",
+				"inputs": {"kakaobohnen": 2.0, "hafermilch": 2.0},
+				"outputs": {"kakao_hafermilch": 3.0},
+			},
+		],
+		"default_modes": ["latte_macchiato_hafer"],
+	},
 ]
 
 
@@ -228,6 +315,20 @@ func is_housing(building: Dictionary) -> bool:
 
 func is_road(building: Dictionary) -> bool:
 	return building.get("kind", "") == "road"
+
+
+func is_inn(building: Dictionary) -> bool:
+	return building.get("kind", "") == "inn"
+
+
+func is_service(building: Dictionary) -> bool:
+	return building.get("kind", "") == "service"
+
+
+func needs_production_manager(building: Dictionary) -> bool:
+	if is_housing(building) or is_road(building) or is_service(building):
+		return false
+	return true
 
 
 func has_production_modes(building: Dictionary) -> bool:
@@ -308,6 +409,7 @@ func snap_placement_anchor(anchor: Vector2i, building: Dictionary) -> Vector2i:
 
 func get_button_label(building: Dictionary) -> String:
 	var size_hint := ""
-	if is_road(building):
+	var footprint: Vector2i = get_footprint(building)
+	if footprint == Vector2i(4, 4):
 		size_hint = " [4×4]"
 	return "%s%s  |  %d€" % [building.get("name", "Gebäude"), size_hint, get_cost(building)]

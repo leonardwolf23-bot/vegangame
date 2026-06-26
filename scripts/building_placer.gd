@@ -189,7 +189,7 @@ func _place_building(anchor: Vector2i) -> void:
 	_grid.register_building(anchor, building_index, building)
 	if BuildingCatalog.is_road(building):
 		return
-	if not BuildingCatalog.is_housing(building):
+	if BuildingCatalog.needs_production_manager(building):
 		var world_pos := _grid.tile_to_world(BuildingCatalog.get_block_center(anchor, building))
 		ProductionManager.register_building(anchor, building_index, world_pos)
 
@@ -205,7 +205,7 @@ func _sell_building(tile: Vector2i) -> void:
 	var anchor: Vector2i = data.get("anchor", Vector2i.ZERO)
 	var building_index: int = int(data.get("building_index", -1))
 	var building: Dictionary = BuildingCatalog.get_building(building_index)
-	if not BuildingCatalog.is_road(building):
+	if not BuildingCatalog.is_road(building) and BuildingCatalog.needs_production_manager(building):
 		ProductionManager.unregister_building(anchor)
 	if BuildingCatalog.is_housing(building):
 		GameState.unregister_housing(BuildingCatalog.get_income(building))
