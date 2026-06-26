@@ -127,6 +127,12 @@ func _world_offset_to_anim_suffix(offset: Vector2) -> StringName:
 	return &"southwest" if dot_y >= 0.0 else &"northeast"
 
 
+func get_place_layer(building: Dictionary) -> TileMapLayer:
+	if building.get("place_layer", "building") == "ground":
+		return ground_layer
+	return building_layer
+
+
 func has_ground(tile: Vector2i) -> bool:
 	if not ground_layer:
 		return true
@@ -168,6 +174,9 @@ func register_building(anchor: Vector2i, building_index: int, building: Dictiona
 		"building_index": building_index,
 		"cost": BuildingCatalog.get_cost(building),
 		"income": BuildingCatalog.get_income(building),
+		"kind": building.get("kind", "building"),
+		"place_layer": building.get("place_layer", "building"),
+		"visual_tile": BuildingCatalog.get_visual_tile(anchor, building),
 	}
 
 	for x in range(footprint.x):
@@ -191,5 +200,11 @@ func remove_building_at(tile: Vector2i) -> Dictionary:
 		for y in range(footprint.y):
 			_cell_owner.erase(foot_origin + Vector2i(x, y))
 	_placed.erase(anchor)
-	building_layer.erase_cell(anchor)
+
+	var layer := building_layer
+	if data.get("place_layer", "building") == "ground":
+		layer = ground_layer
+	var visual_tile: Vector2i = data.get("visual_tile", anchor)
+	if layer:
+		layer.erase_cell(visual_tile)
 	return data

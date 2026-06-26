@@ -4,6 +4,20 @@ extends Node
 
 const BUILDINGS: Array[Dictionary] = [
 	{
+		"id": "strasse",
+		"name": "Straße",
+		"kind": "road",
+		"place_layer": "ground",
+		"source_id": 0,
+		"atlas_coords": Vector2i(0, 0),
+		"size": Vector2i(1, 1),
+		"footprint": Vector2i(4, 4),
+		"footprint_offset": Vector2i.ZERO,
+		"visual_offset": Vector2i(1, 1),
+		"snap_grid": 4,
+		"cost": 15,
+	},
+	{
 		"id": "house",
 		"name": "Haus",
 		"kind": "housing",
@@ -221,6 +235,10 @@ func is_housing(building: Dictionary) -> bool:
 	return building.get("kind", "") == "housing"
 
 
+func is_road(building: Dictionary) -> bool:
+	return building.get("kind", "") == "road"
+
+
 func has_production_modes(building: Dictionary) -> bool:
 	var kind: String = building.get("kind", "")
 	return kind in ["multi_extractor", "processor"]
@@ -267,5 +285,26 @@ func get_footprint_origin(anchor: Vector2i, building: Dictionary) -> Vector2i:
 	return anchor + get_footprint_offset(building)
 
 
+func get_visual_tile(anchor: Vector2i, building: Dictionary) -> Vector2i:
+	if building.has("visual_offset"):
+		return get_footprint_origin(anchor, building) + building["visual_offset"]
+	return anchor
+
+
+func snap_placement_anchor(anchor: Vector2i, building: Dictionary) -> Vector2i:
+	var snap: int = int(building.get("snap_grid", 0))
+	if snap <= 1:
+		return anchor
+	var foot_origin := get_footprint_origin(anchor, building)
+	var snapped_foot := Vector2i(
+		int(floor(float(foot_origin.x) / float(snap))) * snap,
+		int(floor(float(foot_origin.y) / float(snap))) * snap,
+	)
+	return snapped_foot - get_footprint_offset(building)
+
+
 func get_button_label(building: Dictionary) -> String:
-	return "%s  |  %d€" % [building.get("name", "Gebäude"), get_cost(building)]
+	var size_hint := ""
+	if is_road(building):
+		size_hint = " [4×4]"
+	return "%s%s  |  %d€" % [building.get("name", "Gebäude"), size_hint, get_cost(building)]

@@ -74,7 +74,11 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _get_placement_tile() -> Vector2i:
-	return _grid.world_to_tile(get_global_mouse_position())
+	var tile := _grid.world_to_tile(get_global_mouse_position())
+	var building: Dictionary = BuildingCatalog.get_building(selected_building_index)
+	if building.is_empty():
+		return tile
+	return BuildingCatalog.snap_placement_anchor(tile, building)
 
 
 func _can_place_building(tile: Vector2i, building: Dictionary) -> bool:
@@ -84,23 +88,25 @@ func _can_place_building(tile: Vector2i, building: Dictionary) -> bool:
 
 
 func _update_ghost() -> void:
-	if not _grid or not _grid.building_layer:
-		_ghost.visible = false
-		return
-
 	var building: Dictionary = BuildingCatalog.get_building(selected_building_index)
 	if building.is_empty():
 		_ghost.visible = false
 		return
 
-	var tile: Vector2i = _get_placement_tile()
-	var can_place: bool = _can_place_building(tile, building)
+	var layer: TileMapLayer = _grid.get_place_layer(building)
+	if not layer or not layer.tile_set:
+		_ghost.visible = false
+		return
 
-	_ghost.global_position = _grid.tile_to_world(tile) + _get_ghost_offset()
+	var anchor: Vector2i = _get_placement_tile()
+	var can_place: bool = _can_place_building(anchor, building)
+	var visual_tile := BuildingCatalog.get_visual_tile(anchor, building)
+
+	_ghost.global_position = _grid.tile_to_world(visual_tile) + _get_ghost_offset()
 	_ghost.visible = true
 	_ghost.modulate = Color(0.3, 1.0, 0.3, 0.5) if can_place else Color(1.0, 0.3, 0.3, 0.5)
 
-	var tile_data = _grid.building_layer.tile_set.get_source(building["source_id"])
+	var tile_data = layer.tile_set.get_source(building["source_id"])
 	if tile_data is TileSetAtlasSource:
 		var atlas: TileSetAtlasSource = tile_data
 		_ghost.texture = atlas.texture
@@ -121,18 +127,24 @@ func _place_building(origin: Vector2i) -> void:
 	if not GameState.spend(cost):
 		return
 
-	var layer: TileMapLayer = _grid.building_layer
+	var layer: TileMapLayer = _grid.get_place_layer(building)
+	if not layer:
+		return
+
+	var visual_tile := BuildingCatalog.get_visual_tile(origin, building)
 	var size: Vector2i = building.get("size", Vector2i.ONE)
 
 	if size == Vector2i.ONE:
-		layer.set_cell(origin, building["source_id"], building["atlas_coords"])
+		layer.set_cell(visual_tile, building["source_id"], building["atlas_coords"])
 	else:
 		for x in range(size.x):
 			for y in range(size.y):
-				var cell: Vector2i = origin + Vector2i(x, y)
+				var cell: Vector2i = visual_tile + Vector2i(x, y)
 				layer.set_cell(cell, building["source_id"], building["atlas_coords"])
 
 	_grid.register_building(origin, building_index, building)
+	if BuildingCatalog.is_road(building):
+		return
 	if not BuildingCatalog.is_housing(building):
 		var foot_origin := BuildingCatalog.get_footprint_origin(origin, building)
 		var footprint := BuildingCatalog.get_footprint(building)
@@ -150,10 +162,10 @@ func _sell_building(tile: Vector2i) -> void:
 		return
 
 	var anchor: Vector2i = data.get("anchor", Vector2i.ZERO)
-	ProductionManager.unregister_building(anchor)
-
 	var building_index: int = int(data.get("building_index", -1))
 	var building: Dictionary = BuildingCatalog.get_building(building_index)
+	if not BuildingCatalog.is_road(building):
+		ProductionManager.unregister_building(anchor)
 	if BuildingCatalog.is_housing(building):
 		GameState.unregister_housing(BuildingCatalog.get_income(building))
 
