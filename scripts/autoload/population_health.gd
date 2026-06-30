@@ -1,12 +1,18 @@
 extends Node
-## Autoload: Vitamin B12, Vitamin D und mentale Gesundheit als Marker (Versorgung vs. Bedarf).
+## Autoload: Vitamin B12, Vitamin D, mentale Gesundheit — Marker + Warnsounds.
 
 
 signal health_status_changed
 
+const WARNING_INTERVAL_DAYS: int = 3
+
 const SUPPLY_PER_FREIZEITPARK: float = 4.0
 const SUPPLY_PER_STADTPARK: float = 3.5
 const BOOK_MENTAL_WELLNESS: float = 2.5
+
+@export_file("*.ogg", "*.wav", "*.mp3") var b12_audio_path: String = "res://audio/b12_mangel.ogg"
+@export_file("*.ogg", "*.wav", "*.mp3") var vitamin_d_audio_path: String = "res://audio/vitamin_d_mangel.ogg"
+@export_file("*.ogg", "*.wav", "*.mp3") var mental_audio_path: String = "res://audio/mental_mangel.ogg"
 
 const MARKERS: Array[Dictionary] = [
 	{
@@ -45,13 +51,21 @@ const MARKERS: Array[Dictionary] = [
 ]
 
 var _deficient: Dictionary = {}
+var _last_warning_day: Dictionary = {}
+var _audio_players: Dictionary = {}
+var _audio_queue: Array[String] = []
+var _active_audio_id: String = ""
 var _grid_manager: GridManager
 
 
 func _ready() -> void:
 	for marker in MARKERS:
-		_deficient[marker["id"]] = false
-	ProductionManager.day_completed.connect(_check_all)
+		var marker_id: String = marker["id"]
+		_deficient[marker_id] = false
+		_last_warning_day[marker_id] = -WARNING_INTERVAL_DAYS
+		_setup_audio_player(marker_id)
+
+	ProductionManager.day_completed.connect(_on_day_completed)
 	ProductionManager.resources_changed.connect(_check_all)
 	GameState.population_changed.connect(_check_all)
 	call_deferred("_check_all")
@@ -110,13 +124,19 @@ func refresh_markers() -> void:
 	health_status_changed.emit()
 
 
-func _check_all(_arg = null) -> void:
+func _on_day_completed(day: int) -> void:
+	_check_all(day)
+
+
+func _check_all(play_audio_on_day: int = -1) -> void:
 	var status_changed := false
 	for marker in MARKERS:
 		if _update_marker(marker):
 			status_changed = true
 	if status_changed:
 		health_status_changed.emit()
+	if play_audio_on_day >= 0:
+		_queue_due_audio(play_audio_on_day)
 
 
 func _update_marker(marker: Dictionary) -> bool:
@@ -126,3 +146,73 @@ func _update_marker(marker: Dictionary) -> bool:
 	var was_deficient: bool = bool(_deficient.get(marker_id, false))
 	_deficient[marker_id] = deficient
 	return deficient != was_deficient
+
+
+func _setup_audio_player(marker_id: String) -> void:
+	var player := AudioStreamPlayer.new()
+	player.name = "AlertAudio_%s" % marker_id
+	player.finished.connect(_on_audio_finished)
+	add_child(player)
+	_audio_players[marker_id] = player
+	_load_audio_for(marker_id)
+
+
+func _audio_path_for(marker_id: String) -> String:
+	match marker_id:
+		"b12":
+			return b12_audio_path
+		"vitamin_d":
+			return vitamin_d_audio_path
+		"mental":
+			return mental_audio_path
+	return ""
+
+
+func _load_audio_for(marker_id: String) -> void:
+	var path := _audio_path_for(marker_id)
+	var player: AudioStreamPlayer = _audio_players.get(marker_id)
+	if not player:
+		return
+	if path.is_empty() or not ResourceLoader.exists(path):
+		push_warning("PopulationHealth: Audiodatei fehlt für '%s' — '%s'" % [marker_id, path])
+		return
+	var stream: AudioStream = load(path)
+	if stream:
+		player.stream = stream
+
+
+func _queue_due_audio(day: int) -> void:
+	if day < 0:
+		return
+	for marker in MARKERS:
+		var marker_id: String = marker["id"]
+		if not bool(_deficient.get(marker_id, false)):
+			continue
+		var last_day: int = int(_last_warning_day.get(marker_id, -WARNING_INTERVAL_DAYS))
+		if day - last_day < WARNING_INTERVAL_DAYS:
+			continue
+		if marker_id in _audio_queue:
+			continue
+		_audio_queue.append(marker_id)
+	_try_play_next_audio(day)
+
+
+func _try_play_next_audio(day: int) -> void:
+	if not _active_audio_id.is_empty():
+		return
+	if _audio_queue.is_empty():
+		return
+	var marker_id: String = _audio_queue.pop_front()
+	var player: AudioStreamPlayer = _audio_players.get(marker_id)
+	if not player or not player.stream:
+		_try_play_next_audio(day)
+		return
+	player.play()
+	_active_audio_id = marker_id
+	_last_warning_day[marker_id] = day
+
+
+func _on_audio_finished() -> void:
+	_active_audio_id = ""
+	if not _audio_queue.is_empty():
+		_try_play_next_audio(ProductionManager.day_count)
