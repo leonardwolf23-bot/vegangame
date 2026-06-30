@@ -10,6 +10,7 @@ var _toggle_btn: Button
 var _building_box: VBoxContainer
 var _mode_box: VBoxContainer
 var _money_label: Label
+var _health_label: Label
 var _resources_label: Label
 var _menu_open: bool = false
 var _selected_index: int = 0
@@ -20,7 +21,9 @@ func _ready() -> void:
 	_placer = get_node_or_null(building_placer_path) as Node2D
 	_build_menu()
 	GameState.money_changed.connect(_refresh_hud)
+	GameState.population_changed.connect(_refresh_hud)
 	ProductionManager.resources_changed.connect(_refresh_hud)
+	PopulationHealth.health_status_changed.connect(_refresh_hud)
 	_select_building(0)
 	_refresh_hud()
 	if _placer and _placer.has_method("set_build_mode"):
@@ -36,12 +39,20 @@ func _build_menu() -> void:
 	_money_label.offset_bottom = 40
 	add_child(_money_label)
 
+	_health_label = Label.new()
+	_health_label.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	_health_label.offset_left = -340
+	_health_label.offset_top = 44
+	_health_label.offset_right = -16
+	_health_label.offset_bottom = 120
+	add_child(_health_label)
+
 	_resources_label = Label.new()
 	_resources_label.set_anchors_preset(Control.PRESET_TOP_RIGHT)
 	_resources_label.offset_left = -340
-	_resources_label.offset_top = 44
+	_resources_label.offset_top = 124
 	_resources_label.offset_right = -16
-	_resources_label.offset_bottom = 200
+	_resources_label.offset_bottom = 280
 	add_child(_resources_label)
 
 	_toggle_btn = Button.new()
@@ -74,6 +85,8 @@ func _build_menu() -> void:
 
 	for i in BuildingCatalog.get_count():
 		var building: Dictionary = BuildingCatalog.get_building(i)
+		if not BuildingCatalog.is_buildable(building):
+			continue
 		var btn := Button.new()
 		btn.text = BuildingCatalog.get_button_label(building)
 		btn.pressed.connect(_on_building_pressed.bind(i))
@@ -129,6 +142,8 @@ func _toggle_mode(mode_id: String, enabled: bool) -> void:
 
 func _refresh_hud(_a = null) -> void:
 	if _money_label:
-		_money_label.text = "Geld: %d €" % GameState.money
+		_money_label.text = "Geld: %d €  |  Bürger: %d" % [GameState.money, GameState.population]
+	if _health_label:
+		_health_label.text = "--- Gesundheit ---\n" + "\n".join(PopulationHealth.get_marker_lines())
 	if _resources_label:
-		_resources_label.text = "\n".join(ProductionManager.get_summary_lines(12))
+		_resources_label.text = "\n".join(ProductionManager.get_summary_lines(10))

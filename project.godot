@@ -15,6 +15,8 @@ BuildingCatalog="*res://scripts/autoload/building_catalog.gd"
 GameState="*res://scripts/autoload/game_state.gd"
 ResourceCatalog="*res://scripts/autoload/resource_catalog.gd"
 ProductionManager="*res://scripts/autoload/production_manager.gd"
+PopulationHealth="*res://scripts/autoload/population_health.gd"
+BuildingInteractionUI="*res://scripts/autoload/building_interaction_ui.gd"
 
 [display]
 

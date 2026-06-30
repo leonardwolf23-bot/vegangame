@@ -9,6 +9,9 @@ extends Node2D
 @export var ground_layer_path: NodePath = NodePath("World/GroundLayer")
 @export var building_layer_path: NodePath = NodePath("World/BuildingLayer")
 @export var grid_manager_path: NodePath = NodePath("GridManager")
+@export var player_path: NodePath = NodePath("World/Player")
+@export var camera_path: NodePath = NodePath("Camera2D")
+@export var building_placer_path: NodePath = NodePath("BuildingPlacer")
 
 
 func _ready() -> void:
@@ -27,3 +30,31 @@ func _ready() -> void:
 
 	grid_manager.ground_layer = ground
 	grid_manager.building_layer = buildings
+
+	var player := get_node_or_null(player_path) as Node2D
+	if player and player.has_method("set_grid_manager"):
+		player.set_grid_manager(grid_manager)
+
+	var camera := get_node_or_null(camera_path) as Camera2D
+	if camera and camera.has_method("set_follow_target") and player:
+		camera.set_follow_target(player)
+
+	PopulationHealth.bind_grid_manager(grid_manager)
+	_place_starter_buildings(grid_manager)
+
+
+func _place_starter_buildings(_grid_manager: GridManager) -> void:
+	var building_placer := get_node_or_null(building_placer_path) as Node2D
+	if not building_placer or not building_placer.has_method("place_starter_building"):
+		return
+
+	var candidates: Array[Vector2i] = [
+		Vector2i(0, 0),
+		Vector2i(-4, 0),
+		Vector2i(0, -4),
+		Vector2i(4, 0),
+		Vector2i(0, 4),
+	]
+	for anchor in candidates:
+		if building_placer.place_starter_building("rathaus", anchor):
+			return
