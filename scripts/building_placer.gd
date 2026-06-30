@@ -220,7 +220,7 @@ func place_starter_building(building_id: String, anchor: Vector2i) -> bool:
 
 
 func _sell_building(tile: Vector2i) -> void:
-	var existing_index := _grid.get_building_index_at(tile)
+	var existing_index: int = _get_building_index_at(tile)
 	if existing_index >= 0:
 		var blocked: Dictionary = BuildingCatalog.get_building(existing_index)
 		if bool(blocked.get("starter_only", false)):
@@ -243,6 +243,17 @@ func _sell_building(tile: Vector2i) -> void:
 	if refund > 0:
 		GameState.add_money(refund)
 	PopulationHealth.refresh_markers()
+
+
+func _get_building_index_at(tile: Vector2i) -> int:
+	if not _grid:
+		return -1
+	if _grid.has_method(&"get_building_index_at"):
+		return _grid.get_building_index_at(tile)
+	if _grid.has_method(&"get_placed_building_at"):
+		var placed: Dictionary = _grid.get_placed_building_at(tile)
+		return int(placed.get("building_index", -1))
+	return -1
 
 
 func _get_ghost_offset() -> Vector2:

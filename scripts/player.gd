@@ -68,7 +68,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 
 	var click_tile: Vector2i = _grid.world_to_tile_from_mouse()
-	var building_index: int = _grid.get_building_index_at(click_tile)
+	var building_index: int = _get_building_index_at(click_tile)
 	if building_index >= 0:
 		var building: Dictionary = BuildingCatalog.get_building(building_index)
 		if BuildingCatalog.is_interactive(building):
@@ -78,6 +78,17 @@ func _unhandled_input(event: InputEvent) -> void:
 
 	_move_to_tile(click_tile)
 	get_viewport().set_input_as_handled()
+
+
+func _get_building_index_at(tile: Vector2i) -> int:
+	if not _grid:
+		return -1
+	if _grid.has_method(&"get_building_index_at"):
+		return _grid.get_building_index_at(tile)
+	if _grid.has_method(&"get_placed_building_at"):
+		var placed: Dictionary = _grid.get_placed_building_at(tile)
+		return int(placed.get("building_index", -1))
+	return -1
 
 
 func _process(delta: float) -> void:
