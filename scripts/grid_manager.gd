@@ -289,7 +289,7 @@ func count_buildings_by_id(building_id: String) -> int:
 	var target_index := BuildingCatalog.get_index_by_id(building_id)
 	if target_index < 0:
 		return 0
-	var count := 0
+	var count: int = 0
 	for anchor in _placed:
 		if int(_placed[anchor].get("building_index", -1)) == target_index:
 			count += 1

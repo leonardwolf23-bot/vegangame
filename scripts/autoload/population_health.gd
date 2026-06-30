@@ -72,7 +72,7 @@ func get_supply(marker: Dictionary) -> float:
 		var factor: float = float(marker["sources"][resource_id])
 		total += ProductionManager.get_total_amount(resource_id) * factor
 	if marker.has("building_id") and _grid_manager:
-		var count := _grid_manager.count_buildings_by_id(str(marker["building_id"]))
+		var count: int = _grid_manager.count_buildings_by_id(str(marker["building_id"]))
 		total += float(count) * float(marker.get("building_supply", 0.0))
 	return total
 
