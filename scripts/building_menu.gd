@@ -74,6 +74,8 @@ func _build_menu() -> void:
 
 	for i in BuildingCatalog.get_count():
 		var building: Dictionary = BuildingCatalog.get_building(i)
+		if not BuildingCatalog.is_buildable(building):
+			continue
 		var btn := Button.new()
 		btn.text = BuildingCatalog.get_button_label(building)
 		btn.pressed.connect(_on_building_pressed.bind(i))
