@@ -67,8 +67,8 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.button_index != MOUSE_BUTTON_LEFT:
 		return
 
-	var click_tile := _grid.world_to_tile_from_mouse()
-	var building_index := _grid.get_building_index_at(click_tile)
+	var click_tile: Vector2i = _grid.world_to_tile_from_mouse()
+	var building_index: int = _grid.get_building_index_at(click_tile)
 	if building_index >= 0:
 		var building: Dictionary = BuildingCatalog.get_building(building_index)
 		if BuildingCatalog.is_interactive(building):
