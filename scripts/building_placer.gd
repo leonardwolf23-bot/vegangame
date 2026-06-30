@@ -190,8 +190,7 @@ func _place_building(anchor: Vector2i) -> void:
 	if BuildingCatalog.is_road(building):
 		return
 	if BuildingCatalog.needs_production_manager(building):
-		var world_pos := _grid.tile_to_world(BuildingCatalog.get_block_center(anchor, building))
-		ProductionManager.register_building(anchor, building_index, world_pos)
+		ProductionManager.register_placed_building_if_needed(anchor, building_index)
 
 	if BuildingCatalog.is_housing(building):
 		GameState.register_housing(BuildingCatalog.get_income(building))

@@ -285,6 +285,81 @@ func get_building_index_at(tile: Vector2i) -> int:
 	return int(data.get("building_index", -1))
 
 
+func get_anchor_at(tile: Vector2i) -> Vector2i:
+	if not _cell_owner.has(tile):
+		return Vector2i(-999999, -999999)
+	return _cell_owner[tile]
+
+
+## Footprint-Klick: liefert Gebäude-Daten für jede Tile im Footprint.
+## Registriert einzelne TileMap-Tiles beim ersten Klick nach, falls nötig.
+func resolve_placed_building_at(tile: Vector2i) -> Dictionary:
+	var placed: Dictionary = get_placed_building_at(tile)
+	if not placed.is_empty():
+		return placed
+	return _try_register_orphan_tile(tile)
+
+
+func _try_register_orphan_tile(tile: Vector2i) -> Dictionary:
+	if not building_layer:
+		return {}
+	var source_id := building_layer.get_cell_source_id(tile)
+	if source_id == -1:
+		return {}
+	var atlas_coords := building_layer.get_cell_atlas_coords(tile)
+	var building_index := BuildingCatalog.get_index_by_tile(source_id, atlas_coords)
+	if building_index < 0:
+		return {}
+	var building: Dictionary = BuildingCatalog.get_building(building_index)
+	if building.is_empty() or BuildingCatalog.is_road(building):
+		return {}
+
+	var anchor: Vector2i = tile - BuildingCatalog.get_sprite_cell(building)
+	if BuildingCatalog.get_sprite_tile(anchor, building) != tile:
+		return {}
+	if _placed.has(anchor):
+		return _placed[anchor]
+
+	register_building(anchor, building_index, building)
+	return _placed.get(anchor, {})
+
+
+func import_buildings_from_tilemap() -> Array:
+	var imported: Array = []
+	if not building_layer:
+		return imported
+
+	var seen_anchors: Dictionary = {}
+	for cell in building_layer.get_used_cells():
+		var source_id := building_layer.get_cell_source_id(cell)
+		if source_id == -1:
+			continue
+		var atlas_coords := building_layer.get_cell_atlas_coords(cell)
+		var building_index := BuildingCatalog.get_index_by_tile(source_id, atlas_coords)
+		if building_index < 0:
+			continue
+
+		var building: Dictionary = BuildingCatalog.get_building(building_index)
+		if building.is_empty() or BuildingCatalog.is_road(building):
+			continue
+
+		var anchor: Vector2i = cell - BuildingCatalog.get_sprite_cell(building)
+		var anchor_key := "%d,%d" % [anchor.x, anchor.y]
+		if seen_anchors.has(anchor_key) or _placed.has(anchor):
+			continue
+		if BuildingCatalog.get_sprite_tile(anchor, building) != cell:
+			continue
+
+		register_building(anchor, building_index, building)
+		seen_anchors[anchor_key] = true
+		imported.append({
+			"anchor": anchor,
+			"building_index": building_index,
+		})
+
+	return imported
+
+
 func count_buildings_by_id(building_id: String) -> int:
 	var target_index := BuildingCatalog.get_index_by_id(building_id)
 	if target_index < 0:

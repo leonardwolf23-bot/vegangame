@@ -90,6 +90,23 @@ func get_building_modes(anchor: Vector2i) -> Array:
 	return _buildings[key]["modes"].duplicate()
 
 
+func has_building_at(anchor: Vector2i) -> bool:
+	return _buildings.has(_anchor_key(anchor))
+
+
+func register_placed_building_if_needed(anchor: Vector2i, building_index: int) -> void:
+	if has_building_at(anchor):
+		return
+	var building: Dictionary = BuildingCatalog.get_building(building_index)
+	if building.is_empty() or not BuildingCatalog.needs_production_manager(building):
+		return
+	var world_pos := Vector2.ZERO
+	if _grid_manager:
+		var center_tile: Vector2i = BuildingCatalog.get_block_center(anchor, building)
+		world_pos = _grid_manager.tile_to_world(center_tile)
+	register_building(anchor, building_index, world_pos)
+
+
 func bind_grid_manager(grid: GridManager) -> void:
 	_grid_manager = grid
 	refresh_all_world_positions()

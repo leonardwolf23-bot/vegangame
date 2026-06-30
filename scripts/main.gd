@@ -40,21 +40,21 @@ func _ready() -> void:
 		camera.set_follow_target(player)
 
 	PopulationHealth.bind_grid_manager(grid_manager)
-	_place_starter_buildings(grid_manager)
+	_import_tilemap_buildings(grid_manager)
 
 
-func _place_starter_buildings(_grid_manager: GridManager) -> void:
-	var building_placer := get_node_or_null(building_placer_path) as Node2D
-	if not building_placer or not building_placer.has_method("place_starter_building"):
+func _import_tilemap_buildings(grid_manager: GridManager) -> void:
+	var imported: Array = []
+	if grid_manager.has_method(&"import_buildings_from_tilemap"):
+		imported = grid_manager.import_buildings_from_tilemap()
+	if imported.is_empty():
 		return
 
-	var candidates: Array[Vector2i] = [
-		Vector2i(0, 0),
-		Vector2i(-4, 0),
-		Vector2i(0, -4),
-		Vector2i(4, 0),
-		Vector2i(0, 4),
-	]
-	for anchor in candidates:
-		if building_placer.place_starter_building("rathaus", anchor):
-			return
+	for entry in imported:
+		var anchor: Vector2i = entry.get("anchor", Vector2i.ZERO)
+		var building_index: int = int(entry.get("building_index", -1))
+		ProductionManager.register_placed_building_if_needed(anchor, building_index)
+		var building: Dictionary = BuildingCatalog.get_building(building_index)
+		if BuildingCatalog.is_housing(building):
+			GameState.register_housing(BuildingCatalog.get_income(building))
+	PopulationHealth.refresh_markers()

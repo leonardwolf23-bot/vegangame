@@ -1,11 +1,12 @@
 extends CanvasLayer
-## Autoload: Interaktion mit Rathaus, Supermarkt und Parks.
+## Autoload: Gebäude anklicken — Shop, Parks, Produktion pro Gebäude.
 
 
 var _panel: PanelContainer
 var _title_label: Label
 var _body_label: Label
 var _action_box: VBoxContainer
+var _active_anchor: Vector2i = Vector2i(-999999, -999999)
 var _active_building_index: int = -1
 
 
@@ -18,28 +19,37 @@ func _ready() -> void:
 func hide_panel() -> void:
 	if _panel:
 		_panel.visible = false
+	_active_anchor = Vector2i(-999999, -999999)
 	_active_building_index = -1
 
 
-func open_building(building_index: int) -> void:
+func open_placed_building(anchor: Vector2i, building_index: int) -> void:
 	var building: Dictionary = BuildingCatalog.get_building(building_index)
-	if building.is_empty() or not BuildingCatalog.is_interactive(building):
+	if building.is_empty() or not BuildingCatalog.can_open_panel(building):
 		return
 
+	_active_anchor = anchor
 	_active_building_index = building_index
+	ProductionManager.register_placed_building_if_needed(anchor, building_index)
+
 	_panel.visible = true
 	_title_label.text = str(building.get("name", "Gebäude"))
-	_body_label.text = str(building.get("description", ""))
+	var footprint: Vector2i = BuildingCatalog.get_footprint(building)
+	_body_label.text = "%s\n(Footprint %d×%d)" % [
+		str(building.get("description", "")),
+		footprint.x,
+		footprint.y,
+	]
 	_rebuild_actions(building)
 
 
 func _build_ui() -> void:
 	_panel = PanelContainer.new()
 	_panel.set_anchors_preset(Control.PRESET_CENTER)
-	_panel.offset_left = -220
-	_panel.offset_top = -180
-	_panel.offset_right = 220
-	_panel.offset_bottom = 180
+	_panel.offset_left = -240
+	_panel.offset_top = -220
+	_panel.offset_right = 240
+	_panel.offset_bottom = 220
 	add_child(_panel)
 
 	var margin := MarginContainer.new()
@@ -73,6 +83,9 @@ func _rebuild_actions(building: Dictionary) -> void:
 	for child in _action_box.get_children():
 		child.queue_free()
 
+	if BuildingCatalog.has_production_modes(building):
+		_add_production_modes(building)
+
 	var kind: String = building.get("kind", "")
 	match kind:
 		"service":
@@ -81,6 +94,50 @@ func _rebuild_actions(building: Dictionary) -> void:
 			_add_rathaus_actions()
 		"wellness":
 			_add_wellness_actions(building)
+		"inn":
+			_add_inn_info()
+		"housing":
+			_add_housing_info(building)
+		"extractor":
+			_add_extractor_info(building)
+		"storage":
+			_add_storage_info()
+
+
+func _add_production_modes(building: Dictionary) -> void:
+	var header := Label.new()
+	header.text = "Produktion (nur dieses Gebäude):"
+	_action_box.add_child(header)
+
+	var entries: Array = building.get("modes", building.get("recipes", []))
+	var active: Array = ProductionManager.get_building_modes(_active_anchor)
+	if active.is_empty():
+		active = ProductionManager.get_default_modes(_active_building_index)
+
+	for entry in entries:
+		var check := CheckBox.new()
+		var mode_id: String = str(entry.get("id", ""))
+		check.text = str(entry.get("label", mode_id))
+		check.button_pressed = mode_id in active
+		check.toggled.connect(_on_production_mode_toggled.bind(mode_id))
+		_action_box.add_child(check)
+
+
+func _on_production_mode_toggled(enabled: bool, mode_id: String) -> void:
+	if _active_anchor == Vector2i(-999999, -999999):
+		return
+
+	var modes: Array = ProductionManager.get_building_modes(_active_anchor)
+	if modes.is_empty():
+		modes = ProductionManager.get_default_modes(_active_building_index).duplicate()
+
+	if enabled:
+		if mode_id not in modes:
+			modes.append(mode_id)
+	else:
+		modes.erase(mode_id)
+
+	ProductionManager.set_building_modes(_active_anchor, modes)
 
 
 func _add_shop_actions(building: Dictionary) -> void:
@@ -110,6 +167,38 @@ func _add_wellness_actions(building: Dictionary) -> void:
 		info.text = "Bürger entspannen hier — +%.0f mentale Gesundheit pro Park." % PopulationHealth.SUPPLY_PER_STADTPARK
 	else:
 		info.text = "Dieser Park stärkt das Wohlbefinden der Stadt."
+	_action_box.add_child(info)
+
+
+func _add_inn_info() -> void:
+	var info := Label.new()
+	info.text = "Essens-Hub: Bürger liefern fertiges Essen hierher."
+	_action_box.add_child(info)
+
+
+func _add_housing_info(building: Dictionary) -> void:
+	var info := Label.new()
+	info.text = "Wohnhaus — +%d €/s Einkommen" % BuildingCatalog.get_income(building)
+	_action_box.add_child(info)
+
+
+func _add_extractor_info(building: Dictionary) -> void:
+	var info := Label.new()
+	var outputs: Dictionary = building.get("outputs_per_day", {})
+	if outputs.is_empty():
+		return
+	var parts: PackedStringArray = []
+	for resource_id in outputs:
+		parts.append(
+			"%s: %.0f/Tag" % [ResourceCatalog.get_resource_name(resource_id), float(outputs[resource_id])]
+		)
+	info.text = "Feste Produktion: " + ", ".join(parts)
+	_action_box.add_child(info)
+
+
+func _add_storage_info() -> void:
+	var info := Label.new()
+	info.text = "Lagergebäude — zentrale Aufbewahrung."
 	_action_box.add_child(info)
 
 
