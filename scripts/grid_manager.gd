@@ -273,6 +273,56 @@ func can_place_building(anchor: Vector2i, building: Dictionary) -> bool:
 	return can_place(block_origin, BuildingCatalog.get_footprint(building))
 
 
+func get_placed_anchors() -> Array:
+	return _placed.keys()
+
+
+func get_placed_building_at(tile: Vector2i) -> Dictionary:
+	if not _cell_owner.has(tile):
+		return {}
+	var anchor: Vector2i = _cell_owner[tile]
+	return _placed.get(anchor, {})
+
+
+## Liest Gebäude-Tiles aus dem BuildingLayer und registriert sie fürs Spiel.
+## Wichtig: source_id + atlas_coords im TileSet müssen zum BuildingCatalog passen.
+func import_buildings_from_tilemap() -> Array:
+	var imported: Array = []
+	if not building_layer:
+		return imported
+
+	var seen_anchors: Dictionary = {}
+	for cell in building_layer.get_used_cells():
+		var source_id := building_layer.get_cell_source_id(cell)
+		if source_id == -1:
+			continue
+		var atlas_coords := building_layer.get_cell_atlas_coords(cell)
+		var building_index := BuildingCatalog.get_index_by_tile(source_id, atlas_coords)
+		if building_index < 0:
+			continue
+
+		var building: Dictionary = BuildingCatalog.get_building(building_index)
+		if building.is_empty() or BuildingCatalog.is_road(building):
+			continue
+
+		var anchor: Vector2i = cell - BuildingCatalog.get_sprite_cell(building)
+		var anchor_key := "%d,%d" % [anchor.x, anchor.y]
+		if seen_anchors.has(anchor_key) or _placed.has(anchor):
+			continue
+
+		if BuildingCatalog.get_sprite_tile(anchor, building) != cell:
+			continue
+
+		register_building(anchor, building_index, building)
+		seen_anchors[anchor_key] = true
+		imported.append({
+			"anchor": anchor,
+			"building_index": building_index,
+		})
+
+	return imported
+
+
 func register_building(anchor: Vector2i, building_index: int, building: Dictionary) -> void:
 	var footprint: Vector2i = BuildingCatalog.get_footprint(building)
 	var block_origin: Vector2i = BuildingCatalog.get_block_origin(anchor)

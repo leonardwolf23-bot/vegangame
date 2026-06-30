@@ -37,3 +37,26 @@ func _ready() -> void:
 	var camera := get_node_or_null(camera_path) as Camera2D
 	if camera and camera.has_method("set_follow_target") and player:
 		camera.set_follow_target(player)
+
+	_import_tilemap_buildings(grid_manager)
+
+
+func _import_tilemap_buildings(grid_manager: GridManager) -> void:
+	var imported: Array = grid_manager.import_buildings_from_tilemap()
+	if imported.is_empty():
+		return
+
+	for entry in imported:
+		var anchor: Vector2i = entry.get("anchor", Vector2i.ZERO)
+		var building_index: int = int(entry.get("building_index", -1))
+		var building: Dictionary = BuildingCatalog.get_building(building_index)
+		if building.is_empty():
+			continue
+
+		if BuildingCatalog.needs_production_manager(building):
+			var center_tile: Vector2i = BuildingCatalog.get_block_center(anchor, building)
+			var world_pos := grid_manager.tile_to_world(center_tile)
+			ProductionManager.register_building(anchor, building_index, world_pos)
+
+		if BuildingCatalog.is_housing(building):
+			GameState.register_housing(BuildingCatalog.get_income(building))

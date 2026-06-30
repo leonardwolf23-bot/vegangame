@@ -288,6 +288,18 @@ const BUILDINGS: Array[Dictionary] = [
 		],
 		"default_modes": ["latte_macchiato_hafer"],
 	},
+	{
+		"id": "lagerhaus",
+		"name": "Lagerhaus",
+		"kind": "storage",
+		"description": "Startgebäude — zentrales Lager (in der TileMap vorplatzieren).",
+		"source_id": 16,
+		"atlas_coords": Vector2i(0, 0),
+		"footprint": Vector2i(4, 4),
+		"sprite_cell": Vector2i(0, 0),
+		"cost": 0,
+		"starter_only": true,
+	},
 ]
 
 
@@ -295,6 +307,33 @@ func get_building(index: int) -> Dictionary:
 	if index < 0 or index >= BUILDINGS.size():
 		return {}
 	return BUILDINGS[index]
+
+
+func get_index_by_id(building_id: String) -> int:
+	for i in BUILDINGS.size():
+		if str(BUILDINGS[i].get("id", "")) == building_id:
+			return i
+	return -1
+
+
+func get_index_by_tile(source_id: int, atlas_coords: Vector2i = Vector2i.ZERO) -> int:
+	for i in BUILDINGS.size():
+		var building: Dictionary = BUILDINGS[i]
+		if int(building.get("source_id", -1)) != source_id:
+			continue
+		var atlas: Vector2i = building.get("atlas_coords", Vector2i.ZERO) as Vector2i
+		if atlas != atlas_coords:
+			continue
+		return i
+	return -1
+
+
+func is_buildable(building: Dictionary) -> bool:
+	return not bool(building.get("starter_only", false))
+
+
+func is_storage(building: Dictionary) -> bool:
+	return building.get("kind", "") == "storage"
 
 
 func get_count() -> int:
@@ -327,6 +366,8 @@ func is_service(building: Dictionary) -> bool:
 
 func needs_production_manager(building: Dictionary) -> bool:
 	if is_housing(building) or is_road(building) or is_service(building):
+		return false
+	if is_storage(building):
 		return false
 	return true
 

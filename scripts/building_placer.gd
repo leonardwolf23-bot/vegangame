@@ -198,6 +198,13 @@ func _place_building(anchor: Vector2i) -> void:
 
 
 func _sell_building(tile: Vector2i) -> void:
+	var existing := _grid.get_placed_building_at(tile)
+	if not existing.is_empty():
+		var blocked_index: int = int(existing.get("building_index", -1))
+		var blocked: Dictionary = BuildingCatalog.get_building(blocked_index)
+		if bool(blocked.get("starter_only", false)):
+			return
+
 	var data: Dictionary = _grid.remove_building_at(tile)
 	if data.is_empty():
 		return
