@@ -41,18 +41,19 @@ func _build_menu() -> void:
 
 	_health_label = Label.new()
 	_health_label.set_anchors_preset(Control.PRESET_TOP_RIGHT)
-	_health_label.offset_left = -340
+	_health_label.offset_left = -360
 	_health_label.offset_top = 44
 	_health_label.offset_right = -16
-	_health_label.offset_bottom = 120
+	_health_label.offset_bottom = 160
+	_health_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	add_child(_health_label)
 
 	_resources_label = Label.new()
 	_resources_label.set_anchors_preset(Control.PRESET_TOP_RIGHT)
-	_resources_label.offset_left = -340
-	_resources_label.offset_top = 124
+	_resources_label.offset_left = -360
+	_resources_label.offset_top = 168
 	_resources_label.offset_right = -16
-	_resources_label.offset_bottom = 280
+	_resources_label.offset_bottom = 360
 	add_child(_resources_label)
 
 	_toggle_btn = Button.new()
@@ -119,6 +120,12 @@ func _rebuild_modes() -> void:
 	var building: Dictionary = BuildingCatalog.get_building(_selected_index)
 	if not BuildingCatalog.has_production_modes(building):
 		return
+
+	var mode_hint := Label.new()
+	mode_hint.text = "Standard für NEUE Gebäude (Klick = einzelnes Gebäude):"
+	mode_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_mode_box.add_child(mode_hint)
+
 	var entries: Array = building.get("modes", building.get("recipes", []))
 	var active: Array = ProductionManager.get_default_modes(_selected_index)
 	for entry in entries:

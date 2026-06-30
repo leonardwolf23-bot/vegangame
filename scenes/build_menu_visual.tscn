@@ -12,6 +12,7 @@ mode_panel = NodePath("BuildPanel/Margin/MainVBox/ModePanel")
 mode_list = NodePath("BuildPanel/Margin/MainVBox/ModePanel/ModeMargin/ModeList")
 money_label = NodePath("MoneyLabel")
 income_label = NodePath("IncomeLabel")
+health_label = NodePath("HealthLabel")
 resources_label = NodePath("ResourcesLabel")
 
 [node name="MoneyLabel" type="Label" parent="."]
@@ -38,14 +39,30 @@ grow_horizontal = 0
 text = "Wohn-Einkommen: +0 €/s"
 horizontal_alignment = 2
 
+[node name="HealthLabel" type="Label" parent="."]
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -360.0
+offset_top = 64.0
+offset_right = -16.0
+offset_bottom = 180.0
+grow_horizontal = 0
+text = "--- Gesundheit ---
+Vitamin B12: —
+Vitamin D: —
+Mentale Gesundheit: —"
+horizontal_alignment = 2
+autowrap_mode = 3
+
 [node name="ResourcesLabel" type="Label" parent="."]
 anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
-offset_left = -340.0
-offset_top = 64.0
+offset_left = -360.0
+offset_top = 188.0
 offset_right = -16.0
-offset_bottom = 220.0
+offset_bottom = 360.0
 grow_horizontal = 0
 text = "Ressourcen..."
 horizontal_alignment = 2
