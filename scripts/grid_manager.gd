@@ -308,33 +308,34 @@ func import_buildings_from_tilemap() -> Array:
 		if source_id == -1:
 			continue
 		var atlas_coords: Vector2i = building_layer.get_cell_atlas_coords(cell)
-		var building_index: int = BuildingCatalog.get_index_by_tile(source_id, atlas_coords)
-		if building_index < 0:
+		var catalog_index: int = BuildingCatalog.get_index_by_tile(source_id, atlas_coords)
+		if catalog_index < 0:
 			continue
 
-		var building: Dictionary = BuildingCatalog.get_building(building_index)
+		var building: Dictionary = BuildingCatalog.get_building(catalog_index)
 		if building.is_empty() or BuildingCatalog.is_road(building):
 			continue
 
 		var anchor: Vector2i = cell - BuildingCatalog.get_sprite_cell(building)
-		var anchor_key := "%d,%d" % [anchor.x, anchor.y]
+		var anchor_key: String = "%d,%d" % [anchor.x, anchor.y]
 		if seen_anchors.has(anchor_key) or _placed.has(anchor):
 			continue
 
 		if BuildingCatalog.get_sprite_tile(anchor, building) != cell:
 			continue
 
-		register_building(anchor, building_index, building)
+		register_building(anchor, catalog_index, building)
 		seen_anchors[anchor_key] = true
 		imported.append({
 			"anchor": anchor,
-			"building_index": building_index,
+			"building_index": catalog_index,
 		})
 
 	return imported
 
 
 func register_building(anchor: Vector2i, building_index: int, building: Dictionary) -> void:
+	var placed_index: int = building_index
 	var footprint: Vector2i = BuildingCatalog.get_footprint(building)
 	var block_origin: Vector2i = BuildingCatalog.get_block_origin(anchor)
 	var backup: Dictionary = {}
@@ -346,7 +347,7 @@ func register_building(anchor: Vector2i, building_index: int, building: Dictiona
 		"anchor": anchor,
 		"footprint": footprint,
 		"foot_origin": block_origin,
-		"building_index": building_index,
+		"building_index": placed_index,
 		"cost": BuildingCatalog.get_cost(building),
 		"income": BuildingCatalog.get_income(building),
 		"kind": building.get("kind", "building"),
@@ -420,7 +421,7 @@ func restore_ground_tiles(backup: Dictionary) -> void:
 func _snapshot_ground_cell(cell: Vector2i) -> Dictionary:
 	if not ground_layer:
 		return {}
-	var source_id := ground_layer.get_cell_source_id(cell)
+	var source_id: int = ground_layer.get_cell_source_id(cell)
 	if source_id == -1:
 		return {}
 	return {
