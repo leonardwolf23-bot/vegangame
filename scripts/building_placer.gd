@@ -199,7 +199,7 @@ func _place_building(anchor: Vector2i) -> void:
 
 
 func place_starter_building(building_id: String, anchor: Vector2i) -> bool:
-	var building_index := BuildingCatalog.get_index_by_id(building_id)
+	var building_index: int = BuildingCatalog.get_index_by_id(building_id)
 	if building_index < 0:
 		return false
 	var building: Dictionary = BuildingCatalog.get_building(building_index)

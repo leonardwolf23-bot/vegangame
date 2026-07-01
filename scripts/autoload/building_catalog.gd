@@ -380,8 +380,20 @@ func get_index_by_id(building_id: String) -> int:
 	return -1
 
 
+func get_index_by_tile(source_id: int, atlas_coords: Vector2i = Vector2i.ZERO) -> int:
+	for i in BUILDINGS.size():
+		var building: Dictionary = BUILDINGS[i]
+		if int(building.get("source_id", -1)) != source_id:
+			continue
+		var atlas: Vector2i = building.get("atlas_coords", Vector2i.ZERO) as Vector2i
+		if atlas != atlas_coords:
+			continue
+		return i
+	return -1
+
+
 func get_building_by_id(building_id: String) -> Dictionary:
-	var index := get_index_by_id(building_id)
+	var index: int = get_index_by_id(building_id)
 	if index < 0:
 		return {}
 	return get_building(index)
