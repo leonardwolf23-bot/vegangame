@@ -9,6 +9,8 @@ const CARRY_AMOUNT: float = 3.0
 const LOCAL_STOCK_CAP: float = 30.0
 const INN_STOCK_CAP: float = 60.0
 const INN_TARGET_PER_FOOD: float = 6.0
+const WAREHOUSE_STOCK_CAP: float = 150.0
+const WAREHOUSE_TARGET_PER_RESOURCE: float = 12.0
 const FOOD_PER_CITIZEN_PER_DAY: float = 1.5
 
 var stock: Dictionary = {}
@@ -220,6 +222,8 @@ func _get_local_cap(anchor: Vector2i) -> float:
 	var building: Dictionary = BuildingCatalog.get_building(int(_buildings[key]["building_index"]))
 	if BuildingCatalog.is_inn(building):
 		return INN_STOCK_CAP
+	if BuildingCatalog.is_warehouse(building):
+		return WAREHOUSE_STOCK_CAP
 	return LOCAL_STOCK_CAP
 
 
@@ -245,6 +249,38 @@ func has_inn() -> bool:
 	return false
 
 
+func has_warehouse() -> bool:
+	for key in _buildings:
+		var building: Dictionary = BuildingCatalog.get_building(int(_buildings[key]["building_index"]))
+		if BuildingCatalog.is_warehouse(building):
+			return true
+	return false
+
+
+func get_local_stock_lines(anchor: Vector2i, max_lines: int = 8) -> PackedStringArray:
+	var lines: PackedStringArray = []
+	var key := _anchor_key(anchor)
+	if not _local_stock.has(key):
+		lines.append("Lager leer")
+		return lines
+	var totals: Dictionary = _local_stock[key].duplicate()
+	var keys: Array = totals.keys()
+	keys.sort()
+	var shown := 0
+	for resource_id in keys:
+		var amount: float = float(totals[resource_id])
+		if amount <= 0.0:
+			continue
+		lines.append("%s: %.0f" % [ResourceCatalog.get_resource_name(resource_id), amount])
+		shown += 1
+		if shown >= max_lines:
+			lines.append("...")
+			break
+	if shown == 0:
+		lines.append("Lager leer")
+	return lines
+
+
 func is_transportable(resource_id: String) -> bool:
 	return resource_id not in ["strom", "essen", "wasser", "seitanpulver"]
 
@@ -257,6 +293,7 @@ func release_job(job: Dictionary) -> void:
 
 func create_transport_jobs() -> Array:
 	var jobs: Array = []
+	jobs.append_array(_create_warehouse_delivery_jobs())
 	jobs.append_array(_create_processor_jobs())
 	jobs.append_array(_create_inn_delivery_jobs())
 	return jobs
@@ -358,6 +395,80 @@ func _create_inn_delivery_jobs() -> Array:
 	return jobs
 
 
+func _create_warehouse_delivery_jobs() -> Array:
+	var jobs: Array = []
+	var seen: Dictionary = {}
+
+	for dest_key in _buildings:
+		var dest_data: Dictionary = _buildings[dest_key]
+		var dest_anchor := _key_to_anchor(dest_key)
+		var building: Dictionary = BuildingCatalog.get_building(dest_data["building_index"])
+		if not BuildingCatalog.is_warehouse(building):
+			continue
+
+		for resource_id in _collect_transportable_at_producers():
+			var have := get_local_amount(dest_anchor, resource_id)
+			if have >= WAREHOUSE_TARGET_PER_RESOURCE:
+				continue
+
+			var source_anchor := _find_warehouse_source(dest_anchor, resource_id)
+			if source_anchor == Vector2i(-999999, -999999):
+				continue
+
+			var pair_key := "lager:%s>%s:%s" % [_anchor_key(source_anchor), dest_key, resource_id]
+			if seen.has(pair_key):
+				continue
+			seen[pair_key] = true
+
+			var source_available := _get_available_at(source_anchor, resource_id)
+			var carry := minf(CARRY_AMOUNT, WAREHOUSE_TARGET_PER_RESOURCE - have)
+			carry = minf(carry, source_available)
+			if carry <= 0.0:
+				continue
+
+			_reserve(source_anchor, resource_id, carry)
+			jobs.append({
+				"from_anchor": source_anchor,
+				"to_anchor": dest_anchor,
+				"resource": resource_id,
+				"amount": carry,
+			})
+
+	return jobs
+
+
+func _collect_transportable_at_producers() -> Array:
+	var found: Dictionary = {}
+	for key in _buildings:
+		var source_anchor := _key_to_anchor(key)
+		var building: Dictionary = BuildingCatalog.get_building(int(_buildings[key]["building_index"]))
+		if BuildingCatalog.is_warehouse(building) or BuildingCatalog.is_inn(building):
+			continue
+		for resource_id in _local_stock.get(key, {}):
+			if is_transportable(resource_id) and _get_available_at(source_anchor, resource_id) > 0.0:
+				found[resource_id] = true
+	var ids: Array = found.keys()
+	ids.sort()
+	return ids
+
+
+func _find_warehouse_source(dest_anchor: Vector2i, resource_id: String) -> Vector2i:
+	var best_anchor := Vector2i(-999999, -999999)
+	var best_amount := 0.0
+	for key in _buildings:
+		var source_anchor := _key_to_anchor(key)
+		if source_anchor == dest_anchor:
+			continue
+		var source_building: Dictionary = BuildingCatalog.get_building(int(_buildings[key]["building_index"]))
+		if BuildingCatalog.is_warehouse(source_building) or BuildingCatalog.is_inn(source_building):
+			continue
+		var available := _get_available_at(source_anchor, resource_id)
+		if available > best_amount:
+			best_amount = available
+			best_anchor = source_anchor
+	return best_anchor
+
+
 func get_summary_lines(max_lines: int = 8) -> PackedStringArray:
 	var lines: PackedStringArray = []
 	lines.append("Tag %d  (%.0fs/Tag)" % [day_count, ResourceCatalog.SECONDS_PER_DAY])
@@ -397,6 +508,9 @@ func _run_day() -> void:
 			continue
 		var kind: String = building.get("kind", "")
 		if BuildingCatalog.is_housing(building):
+			continue
+		if BuildingCatalog.is_warehouse(building):
+			_pay_upkeep(building)
 			continue
 		var upkeep_ok := _pay_upkeep(building)
 		var scale := 1.0 if upkeep_ok else 0.5

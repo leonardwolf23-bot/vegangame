@@ -293,10 +293,10 @@ const BUILDINGS: Array[Dictionary] = [
 		"default_modes": ["latte_macchiato_hafer"],
 	},
 	{
-		"id": "rathaus",
-		"name": "Rathaus",
-		"kind": "civic",
-		"description": "Startgebäude — hier kann man Bücher lesen für mentale Gesundheit.",
+		"id": "lagerhaus",
+		"name": "Lagerhaus",
+		"kind": "storage",
+		"description": "Zentrales Lager — alle produzierten Güter werden hierher geliefert.",
 		"source_id": 16,
 		"atlas_coords": Vector2i(0, 0),
 		"footprint": Vector2i(4, 4),
@@ -384,6 +384,14 @@ func is_interactive(building: Dictionary) -> bool:
 
 func is_civic(building: Dictionary) -> bool:
 	return building.get("kind", "") == "civic"
+
+
+func is_storage(building: Dictionary) -> bool:
+	return building.get("kind", "") == "storage"
+
+
+func is_warehouse(building: Dictionary) -> bool:
+	return is_storage(building)
 
 
 func is_wellness(building: Dictionary) -> bool:

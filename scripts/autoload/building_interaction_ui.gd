@@ -90,8 +90,8 @@ func _rebuild_actions(building: Dictionary) -> void:
 	match kind:
 		"service":
 			_add_shop_actions(building)
-		"civic":
-			_add_rathaus_actions()
+		"storage":
+			_add_warehouse_info()
 		"wellness":
 			_add_wellness_actions(building)
 		"inn":
@@ -100,8 +100,6 @@ func _rebuild_actions(building: Dictionary) -> void:
 			_add_housing_info(building)
 		"extractor":
 			_add_extractor_info(building)
-		"storage":
-			_add_storage_info()
 
 
 func _add_production_modes(building: Dictionary) -> void:
@@ -151,11 +149,14 @@ func _add_shop_actions(building: Dictionary) -> void:
 		_action_box.add_child(btn)
 
 
-func _add_rathaus_actions() -> void:
-	var btn := Button.new()
-	btn.text = "Buch lesen (+ mentale Auszeit)"
-	btn.pressed.connect(_on_read_book)
-	_action_box.add_child(btn)
+func _add_warehouse_info() -> void:
+	var header := Label.new()
+	header.text = "Lagerbestand:"
+	_action_box.add_child(header)
+	for line in ProductionManager.get_local_stock_lines(_active_anchor, 10):
+		var row := Label.new()
+		row.text = line
+		_action_box.add_child(row)
 
 
 func _add_wellness_actions(building: Dictionary) -> void:
@@ -196,12 +197,6 @@ func _add_extractor_info(building: Dictionary) -> void:
 	_action_box.add_child(info)
 
 
-func _add_storage_info() -> void:
-	var info := Label.new()
-	info.text = "Lagergebäude — zentrale Aufbewahrung."
-	_action_box.add_child(info)
-
-
 func _on_buy_item(item: Dictionary) -> void:
 	var cost: int = int(item.get("cost", 0))
 	var resource_id: String = str(item.get("id", ""))
@@ -211,7 +206,3 @@ func _on_buy_item(item: Dictionary) -> void:
 	if not GameState.spend(cost):
 		return
 	ProductionManager.add_resources({resource_id: amount})
-
-
-func _on_read_book() -> void:
-	PopulationHealth.read_book_at_rathaus()
