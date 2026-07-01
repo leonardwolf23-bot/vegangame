@@ -293,8 +293,8 @@ func release_job(job: Dictionary) -> void:
 
 func create_transport_jobs() -> Array:
 	var jobs: Array = []
-	jobs.append_array(_create_warehouse_delivery_jobs())
 	jobs.append_array(_create_processor_jobs())
+	jobs.append_array(_create_warehouse_delivery_jobs())
 	jobs.append_array(_create_inn_delivery_jobs())
 	return jobs
 
@@ -407,6 +407,8 @@ func _create_warehouse_delivery_jobs() -> Array:
 			continue
 
 		for resource_id in _collect_transportable_at_producers():
+			if _any_processor_needs_resource(resource_id):
+				continue
 			var have := get_local_amount(dest_anchor, resource_id)
 			if have >= WAREHOUSE_TARGET_PER_RESOURCE:
 				continue
@@ -467,6 +469,28 @@ func _find_warehouse_source(dest_anchor: Vector2i, resource_id: String) -> Vecto
 			best_amount = available
 			best_anchor = source_anchor
 	return best_anchor
+
+
+func _any_processor_needs_resource(resource_id: String) -> bool:
+	for dest_key in _buildings:
+		var dest_data: Dictionary = _buildings[dest_key]
+		var dest_anchor := _key_to_anchor(dest_key)
+		var building: Dictionary = BuildingCatalog.get_building(dest_data["building_index"])
+		if building.is_empty():
+			continue
+		var kind: String = building.get("kind", "")
+		if kind not in ["processor", "multi_recipe"]:
+			continue
+		for mode_id in dest_data["modes"]:
+			var recipe: Dictionary = BuildingCatalog.get_recipe(building, str(mode_id))
+			if recipe.is_empty():
+				continue
+			if not recipe.get("inputs", {}).has(resource_id):
+				continue
+			var needed: float = float(recipe["inputs"][resource_id])
+			if get_local_amount(dest_anchor, resource_id) < needed:
+				return true
+	return false
 
 
 func get_summary_lines(max_lines: int = 8) -> PackedStringArray:
@@ -564,12 +588,17 @@ func _run_building_production(anchor: Vector2i, building: Dictionary, modes: Arr
 	var kind: String = building.get("kind", "passive")
 	match kind:
 		"extractor":
-			_add_local_outputs_scaled(anchor, building.get("outputs_per_day", {}), scale)
+			var outputs: Dictionary = building.get("outputs_per_day", {})
+			if _has_room_for_outputs(anchor, outputs, scale):
+				_add_local_outputs_scaled(anchor, outputs, scale)
 		"multi_extractor":
 			for mode_id in modes:
 				var mode: Dictionary = BuildingCatalog.get_mode(building, str(mode_id))
-				if not mode.is_empty():
-					_add_local_outputs_scaled(anchor, mode.get("outputs_per_day", {}), scale)
+				if mode.is_empty():
+					continue
+				var mode_outputs: Dictionary = mode.get("outputs_per_day", {})
+				if _has_room_for_outputs(anchor, mode_outputs, scale):
+					_add_local_outputs_scaled(anchor, mode_outputs, scale)
 		"processor", "multi_recipe":
 			if scale < 1.0:
 				return
@@ -577,9 +606,27 @@ func _run_building_production(anchor: Vector2i, building: Dictionary, modes: Arr
 				var recipe: Dictionary = BuildingCatalog.get_recipe(building, str(mode_id))
 				if recipe.is_empty():
 					continue
-				if _can_process_recipe(anchor, recipe):
-					_spend_recipe_inputs(anchor, recipe.get("inputs", {}))
-					_add_local_outputs(anchor, recipe.get("outputs", {}))
+				if not _can_process_recipe(anchor, recipe):
+					continue
+				if not _has_room_for_outputs(anchor, recipe.get("outputs", {})):
+					continue
+				_spend_recipe_inputs(anchor, recipe.get("inputs", {}))
+				_add_local_outputs(anchor, recipe.get("outputs", {}))
+
+
+func _get_local_room(anchor: Vector2i, resource_id: String) -> float:
+	var cap := _get_local_cap(anchor)
+	return maxf(cap - get_local_amount(anchor, resource_id), 0.0)
+
+
+func _has_room_for_outputs(anchor: Vector2i, outputs: Dictionary, scale: float = 1.0) -> bool:
+	for resource_id in outputs:
+		var amount: float = float(outputs[resource_id]) * scale
+		if amount <= 0.0:
+			continue
+		if _get_local_room(anchor, resource_id) < amount:
+			return false
+	return true
 
 
 func _add_local_outputs_scaled(anchor: Vector2i, outputs: Dictionary, scale: float) -> void:
@@ -597,12 +644,17 @@ func _bootstrap_production(anchor: Vector2i, building: Dictionary, modes: Array)
 	var kind: String = building.get("kind", "")
 	match kind:
 		"extractor":
-			_add_local_outputs(anchor, building.get("outputs_per_day", {}))
+			var outputs: Dictionary = building.get("outputs_per_day", {})
+			if _has_room_for_outputs(anchor, outputs):
+				_add_local_outputs(anchor, outputs)
 		"multi_extractor":
 			for mode_id in modes:
 				var mode: Dictionary = BuildingCatalog.get_mode(building, str(mode_id))
-				if not mode.is_empty():
-					_add_local_outputs(anchor, mode.get("outputs_per_day", {}))
+				if mode.is_empty():
+					continue
+				var mode_outputs: Dictionary = mode.get("outputs_per_day", {})
+				if _has_room_for_outputs(anchor, mode_outputs):
+					_add_local_outputs(anchor, mode_outputs)
 
 
 func _can_process_recipe(anchor: Vector2i, recipe: Dictionary) -> bool:
