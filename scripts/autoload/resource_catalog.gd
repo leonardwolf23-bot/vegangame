@@ -12,7 +12,7 @@ const DISPLAY_NAMES: Dictionary = {
 	"essen": "Essen (kg)",
 	"wasser": "Wasser (L)",
 	"holz": "Holz",
-	"stein": "Stein",
+	"beton": "Beton",
 	"weizen": "Weizen",
 	"sojabohnen": "Sojabohnen",
 	"kichererbsen": "Kichererbsen",
@@ -22,6 +22,7 @@ const DISPLAY_NAMES: Dictionary = {
 	"avocados": "Avocados",
 	"tomaten": "Tomaten",
 	"eisbergsalat": "Eisbergsalat",
+	"kakaobohnen": "Kakaobohnen",
 	"sojamilch": "Sojamilch",
 	"hafermilch": "Hafermilch",
 	"sojajoghurt": "Sojajoghurt",
@@ -36,7 +37,52 @@ const DISPLAY_NAMES: Dictionary = {
 	"hummus": "Hummus",
 	"guacamole": "Guacamole",
 	"kaese": "Väse (Käse)",
+	"seitandoener": "Veganer Döner",
+	"falafel": "Falafel",
+	"latte_macchiato_hafer": "Latte Macchiato (Hafer)",
+	"latte_macchiato_soja": "Latte Macchiato (Soja)",
+	"cappuccino_hafer": "Cappuccino (Hafer)",
+	"cappuccino_soja": "Cappuccino (Soja)",
+	"kakao_hafermilch": "Kakao (Hafermilch)",
+	"vitamin_b12": "Vitamin B12 (Tabletten)",
+	"vitamin_d": "Vitamin D (Tabletten)",
+	"mental_wellness": "Mentale Auszeit",
+	"pflanzenprotein": "Pflanzenprotein",
 }
+
+## Fertige Speisen — werden ans Gasthaus geliefert (Wert = Essens-Einheiten).
+const EDIBLE_FOODS: Dictionary = {
+	"broetchen": 1.0,
+	"bretzeln": 1.0,
+	"pommes": 0.8,
+	"hummus": 1.0,
+	"guacamole": 1.0,
+	"seitanwuerste": 1.0,
+	"seitansteaks": 1.2,
+	"seitandoener": 1.5,
+	"falafel": 1.2,
+	"kaese": 0.8,
+	"sojamilch": 0.6,
+	"hafermilch": 0.6,
+	"sojajoghurt": 0.7,
+	"latte_macchiato_hafer": 0.5,
+	"latte_macchiato_soja": 0.5,
+	"cappuccino_hafer": 0.5,
+	"cappuccino_soja": 0.5,
+	"kakao_hafermilch": 0.6,
+}
+
+
+func is_edible(resource_id: String) -> bool:
+	return EDIBLE_FOODS.has(resource_id)
+
+
+func get_food_value(resource_id: String) -> float:
+	return float(EDIBLE_FOODS.get(resource_id, 0.0))
+
+
+func get_edible_resource_ids() -> Array:
+	return EDIBLE_FOODS.keys()
 
 
 func get_resource_name(resource_id: String) -> String:
@@ -49,6 +95,6 @@ func get_start_stock() -> Dictionary:
 		"essen": 80.0,
 		"wasser": 400.0,
 		"holz": 10.0,
-		"stein": 10.0,
+		"beton": 10.0,
 		"seitanpulver": 5.0,
 	}
