@@ -215,7 +215,7 @@ const BUILDINGS: Array[Dictionary] = [
 	},
 	{
 		"id": "doenermann",
-		"name": "Dönermann",
+		"name": "Dönerbude",
 		"kind": "processor",
 		"source_id": 13,
 		"atlas_coords": Vector2i(0, 0),
@@ -225,12 +225,12 @@ const BUILDINGS: Array[Dictionary] = [
 		"recipes": [
 			{
 				"id": "seitandoener",
-				"label": "Seitandöner",
+				"label": "Veganer Döner",
 				"inputs": {"seitansteaks": 2.0, "eisbergsalat": 1.0, "tomaten": 1.0},
 				"outputs": {"seitandoener": 4.0},
 			},
 			{"id": "hummus", "label": "Hummus", "inputs": {"kichererbsen": 3.0, "tomaten": 1.0}, "outputs": {"hummus": 4.0}},
-			{"id": "pommes", "label": "Pommes", "inputs": {"kartoffeln": 4.0}, "outputs": {"pommes": 6.0}},
+			{"id": "falafel", "label": "Falafel", "inputs": {"kichererbsen": 4.0}, "outputs": {"falafel": 5.0}},
 		],
 		"default_modes": ["seitandoener"],
 	},
@@ -328,6 +328,42 @@ const BUILDINGS: Array[Dictionary] = [
 		"sprite_cell": Vector2i(0, 0),
 		"cost": 380,
 	},
+	{
+		"id": "lagerhaus",
+		"name": "Lagerhaus",
+		"kind": "storage",
+		"description": "Zentrales Lager für Waren.",
+		"source_id": 19,
+		"atlas_coords": Vector2i(0, 0),
+		"footprint": Vector2i(4, 4),
+		"sprite_cell": Vector2i(0, 0),
+		"cost": 350,
+	},
+	{
+		"id": "proteinlabor",
+		"name": "Proteinlabor",
+		"kind": "processor",
+		"source_id": 20,
+		"atlas_coords": Vector2i(0, 0),
+		"footprint": Vector2i(3, 3),
+		"sprite_cell": Vector2i(0, 0),
+		"cost": 360,
+		"recipes": [
+			{
+				"id": "pflanzenprotein",
+				"label": "Pflanzenprotein",
+				"inputs": {"sojabohnen": 4.0, "kichererbsen": 2.0},
+				"outputs": {"pflanzenprotein": 4.0},
+			},
+			{
+				"id": "vitamin_b12_lab",
+				"label": "Vitamin B12",
+				"inputs": {"sojabohnen": 3.0},
+				"outputs": {"vitamin_b12": 3.0},
+			},
+		],
+		"default_modes": ["pflanzenprotein"],
+	},
 ]
 
 
@@ -404,8 +440,12 @@ func is_service(building: Dictionary) -> bool:
 	return building.get("kind", "") == "service"
 
 
+func is_storage(building: Dictionary) -> bool:
+	return building.get("kind", "") == "storage"
+
+
 func needs_production_manager(building: Dictionary) -> bool:
-	if is_housing(building) or is_road(building) or is_service(building):
+	if is_housing(building) or is_road(building) or is_service(building) or is_storage(building):
 		return false
 	if is_civic(building) or is_wellness(building):
 		return false

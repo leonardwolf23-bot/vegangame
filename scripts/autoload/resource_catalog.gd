@@ -37,7 +37,8 @@ const DISPLAY_NAMES: Dictionary = {
 	"hummus": "Hummus",
 	"guacamole": "Guacamole",
 	"kaese": "Väse (Käse)",
-	"seitandoener": "Seitandöner",
+	"seitandoener": "Veganer Döner",
+	"falafel": "Falafel",
 	"latte_macchiato_hafer": "Latte Macchiato (Hafer)",
 	"latte_macchiato_soja": "Latte Macchiato (Soja)",
 	"cappuccino_hafer": "Cappuccino (Hafer)",
@@ -46,6 +47,7 @@ const DISPLAY_NAMES: Dictionary = {
 	"vitamin_b12": "Vitamin B12 (Tabletten)",
 	"vitamin_d": "Vitamin D (Tabletten)",
 	"mental_wellness": "Mentale Auszeit",
+	"pflanzenprotein": "Pflanzenprotein",
 }
 
 ## Fertige Speisen — werden ans Gasthaus geliefert (Wert = Essens-Einheiten).
@@ -58,6 +60,7 @@ const EDIBLE_FOODS: Dictionary = {
 	"seitanwuerste": 1.0,
 	"seitansteaks": 1.2,
 	"seitandoener": 1.5,
+	"falafel": 1.2,
 	"kaese": 0.8,
 	"sojamilch": 0.6,
 	"hafermilch": 0.6,
