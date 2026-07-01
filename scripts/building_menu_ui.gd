@@ -10,6 +10,7 @@ extends CanvasLayer
 @export var mode_list: VBoxContainer
 @export var money_label: Label
 @export var income_label: Label
+@export var health_label: Label
 @export var resources_label: Label
 
 var _placer: Node2D
@@ -34,8 +35,11 @@ func _ready() -> void:
 
 	GameState.money_changed.connect(_refresh_hud)
 	GameState.income_changed.connect(_refresh_hud)
+	GameState.population_changed.connect(_refresh_hud)
 	ProductionManager.resources_changed.connect(_refresh_hud)
 	ProductionManager.day_completed.connect(_refresh_hud)
+	if PopulationHealth:
+		PopulationHealth.health_status_changed.connect(_refresh_hud)
 
 	_build_building_buttons()
 	_select_building(0)
@@ -127,9 +131,11 @@ func _on_mode_toggled(enabled: bool, mode_id: String) -> void:
 
 func _refresh_hud(_arg = null) -> void:
 	if money_label:
-		money_label.text = "Geld: %d €" % GameState.money
+		money_label.text = "Geld: %d €  |  Bürger: %d" % [GameState.money, GameState.population]
 	if income_label:
 		income_label.text = "Wohn-Einkommen: +%d €/s" % int(GameState.get_income_per_second())
+	if health_label:
+		health_label.text = "--- Gesundheit ---\n" + "\n".join(PopulationHealth.get_marker_lines())
 	if resources_label:
 		resources_label.text = "\n".join(ProductionManager.get_summary_lines(10))
 	_refresh_building_buttons()

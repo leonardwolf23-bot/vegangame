@@ -9,6 +9,9 @@ extends Node2D
 @export var ground_layer_path: NodePath = NodePath("World/GroundLayer")
 @export var building_layer_path: NodePath = NodePath("World/BuildingLayer")
 @export var grid_manager_path: NodePath = NodePath("GridManager")
+@export var player_path: NodePath = NodePath("World/Player")
+@export var camera_path: NodePath = NodePath("Camera2D")
+@export var building_placer_path: NodePath = NodePath("BuildingPlacer")
 
 
 func _ready() -> void:
@@ -27,3 +30,31 @@ func _ready() -> void:
 
 	grid_manager.ground_layer = ground
 	grid_manager.building_layer = buildings
+
+	var player := get_node_or_null(player_path) as Node2D
+	if player and player.has_method("set_grid_manager"):
+		player.set_grid_manager(grid_manager)
+
+	var camera := get_node_or_null(camera_path) as Camera2D
+	if camera and camera.has_method("set_follow_target") and player:
+		camera.set_follow_target(player)
+
+	PopulationHealth.bind_grid_manager(grid_manager)
+	_import_tilemap_buildings(grid_manager)
+
+
+func _import_tilemap_buildings(grid_manager: GridManager) -> void:
+	var imported: Array = []
+	if grid_manager.has_method(&"import_buildings_from_tilemap"):
+		imported = grid_manager.import_buildings_from_tilemap()
+	if imported.is_empty():
+		return
+
+	for entry in imported:
+		var anchor: Vector2i = entry.get("anchor", Vector2i.ZERO)
+		var building_index: int = int(entry.get("building_index", -1))
+		ProductionManager.register_placed_building_if_needed(anchor, building_index)
+		var building: Dictionary = BuildingCatalog.get_building(building_index)
+		if BuildingCatalog.is_housing(building):
+			GameState.register_housing(BuildingCatalog.get_income(building))
+	PopulationHealth.refresh_markers()
